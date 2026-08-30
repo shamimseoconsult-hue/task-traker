@@ -102,7 +102,7 @@
 <div class="app" id="app">
     <div class="header">
         <h1><i class="fas fa-rocket"></i> Freelancer + Agency OS</h1>
-        <span class="badge-date"><i class="far fa-calendar-alt"></i> <span id="currentDateDisplay"></span> | <i class="fas fa-users"></i> Leads: <span id="leadCountDisplay">0</span> | <i class="fas fa-tasks"></i> Tasks: <span id="taskCountDisplay">0</span></span>
+        <span class="badge-date"><i class="far fa-calendar-alt"></i> <span id="currentDateDisplay"></span> | <i class="fas fa-users"></i> Leads: <span id="leadCountDisplay">0</span> | <i class="fas fa-tasks"></i> Tasks: <span id="taskCountDisplay">0</span> | <span id="saveStatusDisplay">—</span> | <button id="manualSaveBtn" onclick="forceSaveNow()" style="cursor:pointer;border:none;background:#2d5be3;color:#fff;padding:3px 10px;border-radius:5px;font-size:12px;"><i class="fas fa-save"></i> Save Now</button></span>
     </div>
 
     <!-- WORKFLOW GUIDE -->
@@ -371,10 +371,8 @@
     const FS_COLLECTION = 'app_data';
     async function storageGet(key, shared) {
         if (hasCloudStorage) {
-            try {
-                const doc = await db.collection(FS_COLLECTION).doc(key).get();
-                return doc.exists ? { key, value: doc.data().value, shared: !!shared } : null;
-            } catch (e) { console.error('storageGet failed', e); return null; }
+            const doc = await db.collection(FS_COLLECTION).doc(key).get(); // let errors throw — a network/permission failure must NEVER be treated as "no data"
+            return doc.exists ? { key, value: doc.data().value, shared: !!shared } : null;
         }
         try { const v = localStorage.getItem(LS_PREFIX + key); return v !== null ? { key, value: v, shared: !!shared } : null; } catch (e) { return null; }
     }
@@ -394,12 +392,10 @@
     }
     async function storageList(prefix, shared) {
         if (hasCloudStorage) {
-            try {
-                const snapshot = await db.collection(FS_COLLECTION).get();
-                const keys = [];
-                snapshot.forEach(doc => { if (!prefix || doc.id.indexOf(prefix) === 0) keys.push(doc.id); });
-                return { keys, prefix, shared: !!shared };
-            } catch (e) { console.error('storageList failed', e); return null; }
+            const snapshot = await db.collection(FS_COLLECTION).get(); // let errors throw, same reasoning as storageGet
+            const keys = [];
+            snapshot.forEach(doc => { if (!prefix || doc.id.indexOf(prefix) === 0) keys.push(doc.id); });
+            return { keys, prefix, shared: !!shared };
         }
         try {
             const keys = [];
@@ -408,39 +404,63 @@
         } catch (e) { return null; }
     }
     async function loadData() {
-        try {
-            const result = await storageGet('ultimate_data', false);
-            if (result && result.value) {
-                const data = JSON.parse(result.value);
-                if (data && data.leads) { APP = data; return; }
-            }
-        } catch (e) { /* key not found or parse error, fall through to backup */ }
-        try {
-            const backup = await storageGet('ultimate_backup', false);
-            if (backup && backup.value) {
-                const data = JSON.parse(backup.value);
-                if (data && data.leads) { APP = data; console.warn('Main data missing/corrupted, restored from backup'); return; }
-            }
-        } catch (e2) { /* no backup either */ }
-        APP = getDefaultData();
+        let mainResult = null, mainFailed = false;
+        try { mainResult = await storageGet('ultimate_data', false); }
+        catch (e) { console.error('Primary load failed (network/permission error)', e); mainFailed = true; }
+        if (mainResult && mainResult.value) {
+            try {
+                const data = JSON.parse(mainResult.value);
+                if (data && data.leads) { APP = data; return true; }
+            } catch (e) { console.error('Primary data corrupted, trying backup', e); }
+        }
+        let backupResult = null, backupFailed = false;
+        try { backupResult = await storageGet('ultimate_backup', false); }
+        catch (e) { console.error('Backup load failed (network/permission error)', e); backupFailed = true; }
+        if (backupResult && backupResult.value) {
+            try {
+                const data = JSON.parse(backupResult.value);
+                if (data && data.leads) { APP = data; console.warn('Main data missing/corrupted, restored from backup'); return true; }
+            } catch (e) { console.error('Backup data corrupted too', e); }
+        }
+        if (mainFailed || backupFailed) {
+            console.error('Both reads failed due to network/permission errors — refusing to overwrite cloud data with empty defaults');
+            return false; // caller must NOT enable auto-save in this case
+        }
+        APP = getDefaultData(); // both reads genuinely succeeded and found nothing — safe: this really is first-time use
+        return true;
     }
-    let saveInFlight = false, savePending = false, dataLoaded = false;
+    let saveInFlight = false, savePending = false, dataLoaded = false, unsavedChanges = false;
+    function setSaveStatus(text, color) { const el = document.getElementById('saveStatusDisplay'); if (el) { el.innerText = text; el.style.color = color || ''; } }
     async function saveData() {
         if (!dataLoaded) return; // NEVER save before the initial load finishes — prevents overwriting cloud data with empty defaults
         document.getElementById('leadCountDisplay').innerText = APP.leads.length;
         document.getElementById('taskCountDisplay').innerText = APP.tasks.length;
+        unsavedChanges = true;
+        setSaveStatus(usingLocalFallback ? '💾 Saving...' : '☁️ Saving...', '#e6a700');
         if (saveInFlight) { savePending = true; return; }
         saveInFlight = true;
         try {
             const json = JSON.stringify(APP);
             await storageSet('ultimate_data', json, false);
             await storageSet('ultimate_backup', json, false);
-        } catch (e) { console.error('Save error', e); }
+            unsavedChanges = false;
+            setSaveStatus('✅ Saved', '#1a9e46');
+        } catch (e) { console.error('Save error', e); setSaveStatus('⚠️ Save failed — check connection', '#c0392b'); }
         saveInFlight = false;
         if (savePending) { savePending = false; saveData(); }
     }
     setInterval(saveData, 5000);
-    window.onbeforeunload = function() { if (dataLoaded) saveData(); };
+    function forceSaveNow() {
+        if (!dataLoaded) { alert('Data ekhono load hocche, ektu wait koro tarpor save koro.'); return; }
+        saveData();
+    }
+    window.onbeforeunload = function(e) {
+        if (dataLoaded && (unsavedChanges || saveInFlight)) {
+            e.preventDefault();
+            e.returnValue = 'Data ekhono save hocche — ektu wait kore tarpor bondho koro.';
+            return e.returnValue;
+        }
+    };
 
     function todayStr() { return new Date().toISOString().split('T')[0]; }
     function daysDiff(d) { if (!d) return 999; return Math.ceil((new Date(d) - new Date(todayStr())) / (1000 * 60 * 60 * 24)); }
@@ -1206,8 +1226,22 @@
 
     // ---------- INIT ----------
     (async function init() {
-        await loadData();
+        let ok = await loadData();
+        let attempts = 1;
+        while (!ok && attempts < 5) {
+            setSaveStatus('⚠️ Connection failed, retrying...', '#c0392b');
+            await new Promise(r => setTimeout(r, 1500));
+            ok = await loadData();
+            attempts++;
+        }
+        if (!ok) {
+            setSaveStatus('❌ Could not load data — reload the page', '#c0392b');
+            const loader = document.getElementById('appLoadingOverlay');
+            if (loader) loader.innerHTML = '<div style="text-align:center;padding:40px;color:#c0392b;font-weight:bold;">⚠️ Internet/Firebase e connect kora jachche na.<br>Data loss thekate auto-save bondho rakha hoyeche.<br>Internet check kore page reload koro.</div>';
+            return; // dataLoaded stays false — auto-save permanently blocked until a successful reload
+        }
         dataLoaded = true;
+        setSaveStatus('✅ Loaded', '#1a9e46');
         renderAll();
         const modeNote = usingLocalFallback ? ' (এই ব্রাউজারে সংরক্ষিত — অন্য ব্রাউজার/ডিভাইসে দেখা যাবে না)' : ' (Firebase cloud sync — সব ব্রাউজার/ডিভাইসে একই data)';
         document.getElementById('backupStatus').innerHTML = '🟢 Double-layer backup active. Saves every 5 seconds.' + modeNote;
