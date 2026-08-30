@@ -93,6 +93,13 @@
         .workflow-box i { color: #4f8cf7; }
         .project-finance-box { background: white; padding: 15px; border-radius: 12px; margin-top: 15px; }
         @media (max-width: 700px) { .tabs { flex-wrap: nowrap; overflow-x: auto; border-radius: 16px; } .action-bar { flex-direction: column; align-items: stretch; } .list-item { flex-direction: column; align-items: stretch; gap: 6px; } .helper-text { white-space: normal; } }
+    body.view-only-mode input:not(#editModeBanner input), body.view-only-mode select:not(#editModeBanner select), body.view-only-mode textarea, body.view-only-mode button:not(.tab-btn):not(.banner-btn) {
+        pointer-events: none !important;
+        opacity: 0.5 !important;
+        filter: grayscale(40%);
+    }
+    #editModeBanner { padding:8px 16px; text-align:center; font-weight:bold; font-size:13px; }
+    #editModeBanner .banner-btn { pointer-events:auto !important; opacity:1 !important; cursor:pointer; border:none; padding:3px 10px; border-radius:5px; margin-left:8px; font-size:12px; }
     </style>
 </head>
 <body>
@@ -372,9 +379,23 @@
     async function storageGet(key, shared) {
         if (hasCloudStorage) {
             const doc = await db.collection(FS_COLLECTION).doc(key).get(); // let errors throw — a network/permission failure must NEVER be treated as "no data"
-            return doc.exists ? { key, value: doc.data().value, shared: !!shared } : null;
+            return doc.exists ? { key, value: doc.data().value, shared: !!shared, updatedAt: doc.data().updatedAt || 0 } : null;
         }
         try { const v = localStorage.getItem(LS_PREFIX + key); return v !== null ? { key, value: v, shared: !!shared } : null; } catch (e) { return null; }
+    }
+    // Atomic compare-and-swap write: only succeeds if the cloud doc's updatedAt still matches what THIS tab last saw.
+    // If some other tab/device/browser saved something newer in the meantime, this throws {conflict:true} instead of
+    // silently clobbering their data — this is what stops the "stale tab overwrites fresh data" bug.
+    async function storageSetSafe(key, value, expectedUpdatedAt) {
+        return await db.runTransaction(async (tx) => {
+            const ref = db.collection(FS_COLLECTION).doc(key);
+            const doc = await tx.get(ref);
+            const currentUpdatedAt = doc.exists ? (doc.data().updatedAt || 0) : 0;
+            if (currentUpdatedAt !== expectedUpdatedAt) { const err = new Error('conflict'); err.conflict = true; err.currentUpdatedAt = currentUpdatedAt; throw err; }
+            const newUpdatedAt = Date.now();
+            tx.set(ref, { value: value, updatedAt: newUpdatedAt });
+            return newUpdatedAt;
+        });
     }
     async function storageSet(key, value, shared) {
         if (hasCloudStorage) {
@@ -410,7 +431,7 @@
         if (mainResult && mainResult.value) {
             try {
                 const data = JSON.parse(mainResult.value);
-                if (data && data.leads) { APP = data; return true; }
+                if (data && data.leads) { APP = data; lastSyncedUpdatedAt = mainResult.updatedAt || 0; return true; }
             } catch (e) { console.error('Primary data corrupted, trying backup', e); }
         }
         let backupResult = null, backupFailed = false;
@@ -419,7 +440,7 @@
         if (backupResult && backupResult.value) {
             try {
                 const data = JSON.parse(backupResult.value);
-                if (data && data.leads) { APP = data; console.warn('Main data missing/corrupted, restored from backup'); return true; }
+                if (data && data.leads) { APP = data; lastSyncedUpdatedAt = 0; console.warn('Main data missing/corrupted, restored from backup'); return true; }
             } catch (e) { console.error('Backup data corrupted too', e); }
         }
         if (mainFailed || backupFailed) {
@@ -427,12 +448,13 @@
             return false; // caller must NOT enable auto-save in this case
         }
         APP = getDefaultData(); // both reads genuinely succeeded and found nothing — safe: this really is first-time use
+        lastSyncedUpdatedAt = 0;
         return true;
     }
-    let saveInFlight = false, savePending = false, dataLoaded = false, unsavedChanges = false;
+    let saveInFlight = false, savePending = false, dataLoaded = false, unsavedChanges = false, lastSyncedUpdatedAt = 0, saveBlocked = false;
     function setSaveStatus(text, color) { const el = document.getElementById('saveStatusDisplay'); if (el) { el.innerText = text; el.style.color = color || ''; } }
     async function saveData() {
-        if (!dataLoaded) return; // NEVER save before the initial load finishes — prevents overwriting cloud data with empty defaults
+        if (!dataLoaded || saveBlocked) return; // NEVER save before the initial load finishes, and never after a detected conflict until the page is reloaded
         document.getElementById('leadCountDisplay').innerText = APP.leads.length;
         document.getElementById('taskCountDisplay').innerText = APP.tasks.length;
         unsavedChanges = true;
@@ -441,17 +463,36 @@
         saveInFlight = true;
         try {
             const json = JSON.stringify(APP);
-            await storageSet('ultimate_data', json, false);
-            await storageSet('ultimate_backup', json, false);
+            if (hasCloudStorage) {
+                const newUpdatedAt = await storageSetSafe('ultimate_data', json, lastSyncedUpdatedAt);
+                lastSyncedUpdatedAt = newUpdatedAt;
+                await storageSet('ultimate_backup', json, false);
+            } else {
+                await storageSet('ultimate_data', json, false);
+                await storageSet('ultimate_backup', json, false);
+            }
             unsavedChanges = false;
             setSaveStatus('✅ Saved', '#1a9e46');
-        } catch (e) { console.error('Save error', e); setSaveStatus('⚠️ Save failed — check connection', '#c0392b'); }
+        } catch (e) {
+            if (e && e.conflict) {
+                // Another tab/browser/device has already saved newer data than what this tab knows about.
+                // Refusing to overwrite it is exactly what prevents the old data-loss bug — stop everything and force a manual reload.
+                saveBlocked = true;
+                console.warn('Conflict: another session saved newer data. Blocking further saves in this tab.', e.currentUpdatedAt);
+                setSaveStatus('⚠️ Onno tab/device e notun data ache — EI PAGE RELOAD KORO (na hole change hariye jete pare)', '#c0392b');
+                alert('⚠️ Onno kono tab/browser/device theke notun data save hoyeche.\n\nData miss na hote, EI PAGE ETA RELOAD (refresh) koro. Tomar shesh change ta save hoy nai — reload korar por abar likho.');
+            } else {
+                console.error('Save error', e);
+                setSaveStatus('⚠️ Save failed — check connection', '#c0392b');
+            }
+        }
         saveInFlight = false;
-        if (savePending) { savePending = false; saveData(); }
+        if (savePending) { savePending = false; if (!saveBlocked) saveData(); }
     }
     setInterval(saveData, 5000);
     function forceSaveNow() {
         if (!dataLoaded) { alert('Data ekhono load hocche, ektu wait koro tarpor save koro.'); return; }
+        if (saveBlocked) { alert('Onno jaygay notun data save hoyeche — age page reload koro.'); return; }
         saveData();
     }
     window.onbeforeunload = function(e) {
