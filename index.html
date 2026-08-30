@@ -424,8 +424,9 @@
         } catch (e2) { /* no backup either */ }
         APP = getDefaultData();
     }
-    let saveInFlight = false, savePending = false;
+    let saveInFlight = false, savePending = false, dataLoaded = false;
     async function saveData() {
+        if (!dataLoaded) return; // NEVER save before the initial load finishes — prevents overwriting cloud data with empty defaults
         document.getElementById('leadCountDisplay').innerText = APP.leads.length;
         document.getElementById('taskCountDisplay').innerText = APP.tasks.length;
         if (saveInFlight) { savePending = true; return; }
@@ -439,7 +440,7 @@
         if (savePending) { savePending = false; saveData(); }
     }
     setInterval(saveData, 5000);
-    window.onbeforeunload = function() { saveData(); };
+    window.onbeforeunload = function() { if (dataLoaded) saveData(); };
 
     function todayStr() { return new Date().toISOString().split('T')[0]; }
     function daysDiff(d) { if (!d) return 999; return Math.ceil((new Date(d) - new Date(todayStr())) / (1000 * 60 * 60 * 24)); }
@@ -1206,6 +1207,7 @@
     // ---------- INIT ----------
     (async function init() {
         await loadData();
+        dataLoaded = true;
         renderAll();
         const modeNote = usingLocalFallback ? ' (এই ব্রাউজারে সংরক্ষিত — অন্য ব্রাউজার/ডিভাইসে দেখা যাবে না)' : ' (Firebase cloud sync — সব ব্রাউজার/ডিভাইসে একই data)';
         document.getElementById('backupStatus').innerHTML = '🟢 Double-layer backup active. Saves every 5 seconds.' + modeNote;
