@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Ultimate Freelancer + Agency OS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', 'Segoe UI', sans-serif; }
+        body { background: #f0f4fb; padding: 12px; display: flex; justify-content: center; }
+        .app { max-width: 1500px; width: 100%; }
+        .header { background: white; padding: 12px 20px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 15px; }
+        .header h1 { font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #1e3c72, #2a5298); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header h1 i { -webkit-text-fill-color: #4f8cf7; }
+        .header .badge-date { background: #eef2f7; padding: 4px 14px; border-radius: 40px; font-size: 12px; color: #2d3436; }
+        .tabs { display: flex; flex-wrap: wrap; gap: 3px; background: white; padding: 5px 10px; border-radius: 50px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); margin-bottom: 20px; overflow-x: auto; }
+        .tab-btn { padding: 6px 14px; border: none; background: transparent; border-radius: 40px; font-weight: 600; font-size: 12px; color: #636e72; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+        .tab-btn:hover { background: #f1f4f9; color: #1e3c72; }
+        .tab-btn.active { background: #1e3c72; color: white; box-shadow: 0 4px 10px rgba(30, 60, 114, 0.3); }
+        .tab-content { display: none; animation: fade 0.2s; }
+        .tab-content.active { display: block; }
+        @keyframes fade { from { opacity: 0.6; } to { opacity: 1; } }
+        .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 15px; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-left: 5px solid #4f8cf7; }
+        .stat-card.clickable { cursor: pointer; transition: 0.2s; }
+        .stat-card.clickable:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
+        .stat-card .label { font-size: 11px; color: #636e72; letter-spacing: 0.3px; }
+        .stat-card .value { font-size: 22px; font-weight: 700; color: #1e3c72; margin-top: 3px; }
+        .stat-card .sub { font-size: 11px; color: #b2bec3; }
+        .stat-card.danger { border-left-color: #d63031; }
+        .stat-card.warning { border-left-color: #fdcb6e; }
+        .stat-card.success { border-left-color: #00b894; }
+        .stat-card.purple { border-left-color: #6c5ce7; }
+        .stat-card.orange { border-left-color: #e17055; }
+        .stat-card.teal { border-left-color: #00cec9; }
+        .action-bar { display: flex; flex-wrap: wrap; gap: 8px; background: white; padding: 12px 16px; border-radius: 14px; margin-bottom: 15px; align-items: center; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+        .action-bar input, .action-bar select, .action-bar textarea { padding: 7px 12px; border: 1px solid #dfe6e9; border-radius: 8px; font-size: 13px; background: white; flex: 1; min-width: 100px; }
+        .action-bar textarea { min-width: 180px; resize: vertical; }
+        .action-bar button { padding: 7px 16px; background: #1e3c72; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; white-space: nowrap; font-size: 13px; }
+        .action-bar button:hover { background: #2a5298; transform: scale(1.02); }
+        .action-bar button.green { background: #00b894; }
+        .action-bar button.red { background: #d63031; }
+        .action-bar button.purple { background: #6c5ce7; }
+        .action-bar button.orange { background: #e17055; }
+        .list-item { background: white; padding: 10px 14px; border-radius: 10px; margin-bottom: 6px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; border-left: 4px solid #4f8cf7; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .list-item:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+        .list-item .left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex: 2; }
+        .list-item .left .title { font-weight: 600; color: #2d3436; font-size: 14px; }
+        .list-item .meta { font-size: 12px; color: #636e72; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .badge { padding: 2px 10px; border-radius: 30px; font-size: 10px; font-weight: 700; }
+        .badge.high { background: #ffebee; color: #c62828; }
+        .badge.mid { background: #fff8e1; color: #f57f17; }
+        .badge.low { background: #e8f5e9; color: #2e7d32; }
+        .badge.active { background: #e3f2fd; color: #0d47a1; }
+        .badge.completed { background: #e0f2f1; color: #004d40; }
+        .badge.onhold { background: #fff3e0; color: #e65100; }
+        .badge.paid { background: #e0f2f1; color: #004d40; }
+        .badge.unpaid { background: #ffebee; color: #c62828; }
+        .badge.converted { background: #e8f5e9; color: #1b5e20; }
+        .badge.lost { background: #ffebee; color: #b71c1c; }
+        .badge.contacted { background: #fff8e1; color: #e65100; }
+        .badge.proposal { background: #e3f2fd; color: #0d47a1; }
+        .badge.cold { background: #eef2f7; color: #2d3436; }
+        .badge.meeting { background: #ede7f6; color: #4527a0; }
+        .badge.planned { background: #eef2f7; color: #2d3436; }
+        .badge.inprogress { background: #fff8e1; color: #e65100; }
+        .badge.done { background: #e0f2f1; color: #004d40; }
+        .deadline-tag { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 30px; }
+        .deadline-tag.safe { background: #dfe6e9; color: #2d3436; }
+        .deadline-tag.warn { background: #ffeaa7; color: #6d4c00; }
+        .deadline-tag.danger { background: #ff7675; color: #6b0000; }
+        .checkbox-xl { width: 18px; height: 18px; accent-color: #1e3c72; cursor: pointer; }
+        .del-btn { background: none; border: none; color: #d63031; cursor: pointer; font-size: 14px; padding: 0 6px; }
+        .del-btn:hover { transform: scale(1.2); }
+        .edit-btn { background: none; border: none; color: #4f8cf7; cursor: pointer; font-size: 14px; padding: 0 6px; }
+        .edit-btn:hover { transform: scale(1.2); }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(30,60,114,0.35); z-index: 1000; align-items: center; justify-content: center; padding: 16px; }
+        .modal-overlay.open { display: flex; }
+        .modal-box { background: white; border-radius: 18px; padding: 22px; width: 100%; max-width: 460px; max-height: 88vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .modal-box h3 { color: #1e3c72; margin-bottom: 16px; font-size: 17px; }
+        .modal-field { margin-bottom: 12px; }
+        .modal-field label { display: block; font-size: 12px; color: #636e72; margin-bottom: 4px; font-weight: 600; }
+        .modal-field input, .modal-field select, .modal-field textarea { width: 100%; padding: 8px 10px; border: 1px solid #dfe6e9; border-radius: 8px; font-size: 13px; box-sizing: border-box; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+        .modal-actions button { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 13px; }
+        .modal-actions .save-btn { background: #1e3c72; color: white; }
+        .modal-actions .save-btn:hover { background: #2a5298; }
+        .modal-actions .cancel-btn { background: #f1f4f9; color: #2d3436; }
+        .helper-text { font-size: 11px; color: #6c5ce7; background: #f0edff; padding: 4px 12px; border-radius: 20px; white-space: nowrap; }
+        .workflow-box { background: #e8f0fe; padding: 12px 18px; border-radius: 12px; margin-bottom: 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 13px; color: #1e3c72; border: 1px solid #c5d5f0; }
+        .workflow-box i { color: #4f8cf7; }
+        .project-finance-box { background: white; padding: 15px; border-radius: 12px; margin-top: 15px; }
+        @media (max-width: 700px) { .tabs { flex-wrap: nowrap; overflow-x: auto; border-radius: 16px; } .action-bar { flex-direction: column; align-items: stretch; } .list-item { flex-direction: column; align-items: stretch; gap: 6px; } .helper-text { white-space: normal; } }
+    </style>
+</head>
+<body>
+<div id="appLoadingOverlay" style="position:fixed;inset:0;background:#f0f4fb;display:flex;align-items:center;justify-content:center;z-index:2000;font-family:'Inter','Segoe UI',sans-serif;color:#1e3c72;font-weight:700;font-size:14px;">
+    <div><i class="fas fa-circle-notch fa-spin" style="margin-right:8px;"></i>Loading your data…</div>
+</div>
+<div class="app" id="app">
+    <div class="header">
+        <h1><i class="fas fa-rocket"></i> Freelancer + Agency OS</h1>
+        <span class="badge-date"><i class="far fa-calendar-alt"></i> <span id="currentDateDisplay"></span> | <i class="fas fa-users"></i> Leads: <span id="leadCountDisplay">0</span> | <i class="fas fa-tasks"></i> Tasks: <span id="taskCountDisplay">0</span></span>
+    </div>
+
+    <!-- WORKFLOW GUIDE -->
+    <div class="workflow-box">
+        <i class="fas fa-info-circle"></i> 
+        <strong>Workflow:</strong> 
+        <span>1. <i class="fas fa-tasks"></i> Add a task — client & project info are filled right inside the task form</span> → 
+        <span>2. <i class="fas fa-paperclip"></i> Click 📎 to attach doc/pdf/xlsx files, or 🔗 to add a Google Doc link — click the name to open it</span> → 
+        <span>3. <i class="fas fa-coins"></i> Log income/expenses per project in Finance</span>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="dashboard"><i class="fas fa-chart-pie"></i> Dashboard</button>
+        <button class="tab-btn" data-tab="today"><i class="fas fa-bullseye"></i> Today's Focus</button>
+        <button class="tab-btn" data-tab="leads"><i class="fas fa-fish"></i> Lead Hunt</button>
+        <button class="tab-btn" data-tab="tasks"><i class="fas fa-tasks"></i> Tasks</button>
+        <button class="tab-btn" data-tab="timer"><i class="fas fa-clock"></i> Timer</button>
+        <button class="tab-btn" data-tab="finance"><i class="fas fa-coins"></i> Finance</button>
+        <button class="tab-btn" data-tab="invoices"><i class="fas fa-file-invoice"></i> Invoices</button>
+        <button class="tab-btn" data-tab="marketing"><i class="fas fa-bullhorn"></i> Marketing</button>
+        <button class="tab-btn" data-tab="backup"><i class="fas fa-shield-alt"></i> Backup</button>
+    </div>
+
+    <!-- 1. DASHBOARD -->
+    <div id="dashboard" class="tab-content active"><div class="grid-4" id="dashStats"></div><div style="background:white;padding:18px;border-radius:16px;"><h4 style="margin-bottom:10px;">🚨 Overdue & Upcoming Tasks</h4><div id="dashUrgent"></div></div></div>
+
+    <!-- 1.5 TODAY'S FOCUS -->
+    <div id="today" class="tab-content">
+        <div id="doNowCard" style="background:linear-gradient(135deg,#1e3c72,#2a5298);color:white;padding:20px 22px;border-radius:16px;margin-bottom:15px;"></div>
+        <div style="background:white;padding:15px 18px;border-radius:14px;margin-bottom:15px;">
+            <h4 style="margin-bottom:10px;color:#1e3c72;"><i class="fas fa-list-ol"></i> Today's Sequence (drag, or use the up/down arrows, to reorder)</h4>
+            <p style="font-size:12px;color:#b2bec3;margin-bottom:8px;">Tasks marked status "Today" in the Tasks tab will show up here.</p>
+            <div id="todaySequenceList"></div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;">
+            <div style="flex:1;min-width:260px;background:#fff5f5;border:1px solid #ffd6d6;padding:14px;border-radius:14px;">
+                <h4 style="color:#c62828;font-size:13px;margin-bottom:8px;"><i class="fas fa-fire"></i> Urgent + Important (Do Now)</h4>
+                <div id="quadDoNow"></div>
+            </div>
+            <div style="flex:1;min-width:260px;background:#e3f2fd;border:1px solid #bbdefb;padding:14px;border-radius:14px;">
+                <h4 style="color:#0d47a1;font-size:13px;margin-bottom:8px;"><i class="fas fa-calendar-check"></i> Important, Not Urgent (Schedule)</h4>
+                <div id="quadSchedule"></div>
+            </div>
+            <div style="flex:1;min-width:260px;background:#fff8e1;border:1px solid #ffecb3;padding:14px;border-radius:14px;">
+                <h4 style="color:#e65100;font-size:13px;margin-bottom:8px;"><i class="fas fa-user-friends"></i> Urgent, Not Important (Delegate)</h4>
+                <div id="quadDelegate"></div>
+            </div>
+            <div style="flex:1;min-width:260px;background:#f1f4f9;border:1px solid #e0e0e0;padding:14px;border-radius:14px;">
+                <h4 style="color:#636e72;font-size:13px;margin-bottom:8px;"><i class="fas fa-trash-alt"></i> Not Urgent, Not Important (Eliminate / Later)</h4>
+                <div id="quadEliminate"></div>
+            </div>
+        </div>
+        <div style="background:white;padding:15px 18px;border-radius:14px;margin-top:15px;">
+            <h4 style="margin-bottom:10px;color:#1e3c72;"><i class="fas fa-clock"></i> Upcoming (This Week)</h4>
+            <div id="weekAheadList"></div>
+        </div>
+        <div style="background:white;padding:15px 18px;border-radius:14px;margin-top:15px;">
+            <h4 style="margin-bottom:4px;color:#1e3c72;"><i class="fas fa-chart-bar"></i> Weekly Workload (deadlines per day)</h4>
+            <p style="font-size:12px;color:#b2bec3;margin-bottom:10px;">If a day shows 4+ tasks, that's an overload warning — move something earlier or delegate before it piles up.</p>
+            <div id="capacityView" style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;"></div>
+        </div>
+    </div>
+
+    <!-- 2. LEADS -->
+    <div id="leads" class="tab-content">
+        <div class="action-bar">
+            <input type="text" id="leadName" placeholder="Lead name (e.g. John Smith) *">
+            <input type="email" id="leadEmail" placeholder="Email (e.g. john@mail.com)">
+            <input type="text" id="leadPhone" placeholder="Phone (e.g. 01712345678)">
+            <input type="url" id="leadWeb" placeholder="Website (e.g. company.com)">
+            <input type="text" id="leadSource" placeholder="Source (LinkedIn/Upwork)">
+            <input type="number" id="leadValue" placeholder="Est. deal value (৳)">
+            <span style="font-size:11px;color:#636e72;display:flex;align-items:center;gap:4px;">Outreach: <input type="date" id="leadOutreach" title="Outreach date"></span>
+            <span style="font-size:11px;color:#636e72;display:flex;align-items:center;gap:4px;">Follow-up: <input type="date" id="leadFollowup" title="Follow-up date"></span>
+            <select id="leadStatus">
+                <option value="Cold">❄️ Cold</option>
+                <option value="Contacted">📩 Contacted</option>
+                <option value="Meeting">🗓️ Meeting</option>
+                <option value="Proposal">📄 Proposal</option>
+                <option value="Converted">✅ Converted</option>
+                <option value="Lost">❌ Lost</option>
+            </select>
+            <button onclick="addLead()"><i class="fas fa-plus"></i> Add</button>
+        </div>
+        <div class="action-bar" style="margin-bottom:10px;">
+            <input type="text" id="leadSearch" placeholder="🔍 Search name/email/website" oninput="renderLeads()">
+            <select id="leadFilterStatus" onchange="renderLeads()"><option value="">All Statuses</option><option value="Cold">Cold</option><option value="Contacted">Contacted</option><option value="Meeting">Meeting</option><option value="Proposal">Proposal</option><option value="Converted">Converted</option><option value="Lost">Lost</option></select>
+        </div>
+        <div id="leadList"></div>
+    </div>
+
+    <!-- 3. CLIENTS -->
+    <!-- 4. TASKS (Client + Project fields merged in directly) -->
+    <div id="tasks" class="tab-content">
+        <div style="background:#f0edff;padding:10px 14px;border-radius:12px;margin-bottom:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+            <span style="font-size:12px;font-weight:700;color:#6c5ce7;"><i class="fas fa-magic"></i> Quick-add from template:</span>
+            <button class="purple" style="padding:5px 12px;font-size:12px;" onclick="applyTemplate('blog')">📝 Blog Article</button>
+            <button class="purple" style="padding:5px 12px;font-size:12px;" onclick="applyTemplate('seo')">🔍 On-Page SEO Audit</button>
+            <button class="purple" style="padding:5px 12px;font-size:12px;" onclick="applyTemplate('quora')">💬 Quora Backlink</button>
+            <button class="purple" style="padding:5px 12px;font-size:12px;" onclick="applyTemplate('product')">🛍️ Product Page (Dupe)</button>
+        </div>
+        <div class="action-bar">
+            <input type="text" id="taskTitle" placeholder="Task (e.g. Homepage UI design) *">
+            <input type="date" id="taskDeadline" title="Task deadline">
+            <select id="taskPriority"><option value="High">High</option><option value="Mid" selected>Mid</option><option value="Low">Low</option></select>
+            <select id="taskStatus"><option value="Pending">Pending</option><option value="Today">Today</option><option value="Done">Done</option></select>
+            <select id="taskRecurring"><option value="none">🔁 No recurrence</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select>
+            <input type="text" id="taskAssignee" placeholder="Assignee (optional)">
+            <input type="text" id="taskSubtaskSeed" placeholder="Subtasks (comma-separated, optional)">
+            <input type="text" id="taskDesc" placeholder="Description/notes (optional)">
+            <input type="number" id="taskEstHours" placeholder="Est. hours (optional)">
+        </div>
+        <div class="action-bar" style="background:#eef2ff;">
+            <span style="font-size:11px;font-weight:700;color:#1e3c72;white-space:nowrap;">👤 Client:</span>
+            <input type="text" id="taskClientName" placeholder="Client name (existing or new)" list="clientNameList">
+            <input type="email" id="taskClientEmail" placeholder="Client email (optional)">
+            <input type="text" id="taskClientPhone" placeholder="Client phone (optional)">
+            <input type="text" id="taskClientCompany" placeholder="Client company (optional)">
+            <input type="text" id="taskClientNotes" placeholder="Client notes (optional)">
+        </div>
+        <div class="action-bar" style="background:#eefaf6;">
+            <span style="font-size:11px;font-weight:700;color:#1e3c72;white-space:nowrap;">📁 Project:</span>
+            <input type="text" id="taskProjectName" placeholder="Project name (existing or new)" list="projectNameList">
+            <input type="number" id="taskProjectBudget" placeholder="Project budget (optional)">
+            <input type="date" id="taskProjectDeadline" title="Project deadline (optional)">
+            <input type="text" id="taskProjectDesc" placeholder="Project description (optional)">
+            <select id="taskProjectStatus"><option value="Active">Active</option><option value="On Hold">On Hold</option><option value="Completed">Completed</option></select>
+        </div>
+        <datalist id="clientNameList"></datalist>
+        <datalist id="projectNameList"></datalist>
+        <div class="action-bar">
+            <button onclick="addTask()" style="flex:0;"><i class="fas fa-plus"></i> Add Task</button>
+        </div>
+        <div class="action-bar" style="margin-bottom:10px;">
+            <input type="text" id="taskSearch" placeholder="🔍 Search tasks" oninput="renderTasks()">
+            <select id="taskFilterProject" onchange="renderTasks()"></select>
+            <select id="taskFilterStatus" onchange="renderTasks()"></select>
+        </div>
+        <div id="taskList"></div>
+    </div>
+
+    <!-- 7. TIMER -->
+    <div id="timer" class="tab-content">
+        <div class="action-bar"><select id="timerTaskSelect"><option value="">Select task</option></select><button class="green" onclick="startTimer()"><i class="fas fa-play"></i> Start</button><button class="red" onclick="stopTimer()"><i class="fas fa-stop"></i> Stop</button><span id="timerDisplay" style="font-size:22px;font-weight:700;color:#1e3c72;padding:0 10px;">00:00:00</span><span id="timerStatus" style="font-size:12px;color:#b2bec3;">⏹️ Stopped</span></div>
+        <div id="timerLogs" style="background:white;padding:15px;border-radius:14px;max-height:250px;overflow-y:auto;"></div>
+    </div>
+
+    <!-- 8. FINANCE (Updated with Project-based tracking) -->
+    <div id="finance" class="tab-content">
+        <div class="grid-4" id="financeStats"></div>
+        
+        <!-- Project-wise Summary -->
+        <div class="project-finance-box">
+            <h4 style="color:#1e3c72; margin-bottom:10px;"><i class="fas fa-project-diagram"></i> Project-wise Income/Expense Summary</h4>
+            <div id="projectFinanceSummary"></div>
+        </div>
+
+        <div style="display:flex;flex-wrap:wrap;gap:15px;margin-top:15px;">
+            <div style="flex:1;min-width:280px;background:white;padding:15px;border-radius:14px;">
+                <h4>➕ Income (by project)</h4>
+                <div class="action-bar" style="padding:0;margin:8px 0;">
+                    <select id="payClient"><option value="">— Add a client first —</option></select>
+                    <input type="number" id="payAmount" placeholder="Amount">
+                    <input type="date" id="payDate">
+                    <select id="payProject"><option value="">— Select project —</option></select>
+                    <select id="payStatus"><option value="Unpaid">Unpaid</option><option value="Paid">Paid</option></select>
+                    <button onclick="addPayment()">Add</button>
+                </div>
+                <div id="paymentList"></div>
+            </div>
+            <div style="flex:1;min-width:280px;background:white;padding:15px;border-radius:14px;">
+                <h4>➖ Expenses (by project)</h4>
+                <div class="action-bar" style="padding:0;margin:8px 0;">
+                    <input type="text" id="expCategory" placeholder="Category (e.g. Server cost)">
+                    <input type="number" id="expAmount" placeholder="Amount">
+                    <input type="date" id="expDate">
+                    <select id="expProject"><option value="">— Select project —</option></select>
+                    <input type="text" id="expNote" placeholder="Note">
+                    <button onclick="addExpense()">Add</button>
+                </div>
+                <div id="expenseList"></div>
+            </div>
+            <div style="flex:1;min-width:280px;background:white;padding:15px;border-radius:14px;">
+                <h4>📦 Subscriptions</h4>
+                <div class="action-bar" style="padding:0;margin:8px 0;">
+                    <input type="text" id="subName" placeholder="Tool name (e.g. Hostinger)">
+                    <input type="number" id="subCost" placeholder="Monthly cost">
+                    <input type="date" id="subRenew">
+                    <button onclick="addSubscription()">Add</button>
+                </div>
+                <div id="subscriptionList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 9. INVOICES -->
+    <div id="invoices" class="tab-content">
+        <div class="action-bar"><select id="invClient"><option value="">— Select —</option></select><select id="invProject"><option value="">— Add a project first —</option></select><input type="number" id="invAmount" placeholder="Amount *"><input type="text" id="invDesc" placeholder="Description of work billed"><input type="date" id="invDate" title="Invoice date"><input type="date" id="invDue" title="Due date"><select id="invStatus"><option value="Unpaid">Unpaid</option><option value="Paid">Paid</option></select><button onclick="generateInvoice()"><i class="fas fa-file-pdf"></i> Invoice</button></div>
+        <div id="invoiceList"></div>
+    </div>
+
+    <!-- 10. MARKETING -->
+    <div id="marketing" class="tab-content">
+        <div class="action-bar">
+            <input type="text" id="mktTitle" placeholder="Content/Campaign (e.g. LinkedIn post) *">
+            <select id="mktType"><option value="Social">Social</option><option value="Blog">Blog</option><option value="Event">Event/Networking</option><option value="Campaign">Campaign</option></select>
+            <input type="text" id="mktChannel" placeholder="Platform/Channel (e.g. LinkedIn)">
+            <input type="date" id="mktDate">
+            <select id="mktStatus"><option value="Planned">Planned</option><option value="In Progress">In Progress</option><option value="Done">Done</option></select>
+            <input type="text" id="mktResult" placeholder="Result/Notes (optional)">
+            <button onclick="addMarketing()"><i class="fas fa-plus"></i> Add</button>
+        </div>
+        <div id="marketingList"></div>
+    </div>
+
+    <!-- 11. BACKUP -->
+    <div id="backup" class="tab-content">
+        <div style="background:white;padding:25px;border-radius:16px;">
+            <h3><i class="fas fa-shield-alt" style="color:#6c5ce7;"></i> Backup Center</h3>
+            <p style="color:#636e72;margin:12px 0;">Auto-save (every 5 sec) + double backup. Auto-restores if data gets corrupted.</p>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;"><button class="green" onclick="manualBackup()"><i class="fas fa-download"></i> Download</button><button class="purple" onclick="document.getElementById('restoreFile').click()"><i class="fas fa-upload"></i> Restore</button><input type="file" id="restoreFile" accept=".json" style="display:none" onchange="restoreBackup(event)"><button class="red" onclick="if(confirm('Reset all data?')){clearAllData();}"><i class="fas fa-trash"></i> Reset</button></div>
+            <div id="backupStatus" style="margin-top:15px;padding:12px;background:#f8faff;border-radius:10px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT MODAL (shared across all categories) -->
+<div class="modal-overlay" id="editModalOverlay" onclick="if(event.target===this) closeEditModal()">
+    <div class="modal-box">
+        <h3 id="editModalTitle"><i class="fas fa-pen"></i> Edit</h3>
+        <div id="editModalFields"></div>
+        <div class="modal-actions">
+            <button class="cancel-btn" onclick="closeEditModal()">Cancel</button>
+            <button class="save-btn" onclick="saveEditModal()"><i class="fas fa-check"></i> Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ---------- CRUSH-PROOF DATA ----------
+    function getDefaultData() {
+        return { leads: [], clients: [], projects: [], tasks: [], payments: [], expenses: [], subscriptions: [], invoices: [], marketing: [], timeLogs: [], timer: { taskId: null, startTime: null } };
+    }
+    let APP = getDefaultData();
+    // ---------- STORAGE LAYER (Firebase Firestore = real cross-browser/cross-device cloud sync.
+    //            Falls back to this browser's local storage only if Firebase fails to load/connect) ----------
+    const LS_PREFIX = 'freelancerOS_';
+    const firebaseConfig = {
+        apiKey: "AIzaSyBOu91Dyhdafi4mUgfTrvWpVULVmb8loAE",
+        authDomain: "task-traker-1c8ee.firebaseapp.com",
+        projectId: "task-traker-1c8ee",
+        storageBucket: "task-traker-1c8ee.firebasestorage.app",
+        messagingSenderId: "1059096017370",
+        appId: "1:1059096017370:web:b7ac742b661a031e5a28e3"
+    };
+    let db = null;
+    let hasCloudStorage = false;
+    try {
+        if (typeof firebase !== 'undefined') {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            hasCloudStorage = true;
+        }
+    } catch (e) { console.error('Firebase init failed, falling back to local storage', e); hasCloudStorage = false; }
+    let usingLocalFallback = !hasCloudStorage;
+    const FS_COLLECTION = 'app_data';
+    async function storageGet(key, shared) {
+        if (hasCloudStorage) {
+            try {
+                const doc = await db.collection(FS_COLLECTION).doc(key).get();
+                return doc.exists ? { key, value: doc.data().value, shared: !!shared } : null;
+            } catch (e) { console.error('storageGet failed', e); return null; }
+        }
+        try { const v = localStorage.getItem(LS_PREFIX + key); return v !== null ? { key, value: v, shared: !!shared } : null; } catch (e) { return null; }
+    }
+    async function storageSet(key, value, shared) {
+        if (hasCloudStorage) {
+            try { await db.collection(FS_COLLECTION).doc(key).set({ value: value, updatedAt: Date.now() }); return { key, value, shared: !!shared }; }
+            catch (e) { console.error('storageSet failed', e); return null; }
+        }
+        try { localStorage.setItem(LS_PREFIX + key, value); return { key, value, shared: !!shared }; } catch (e) { return null; }
+    }
+    async function storageDelete(key, shared) {
+        if (hasCloudStorage) {
+            try { await db.collection(FS_COLLECTION).doc(key).delete(); return { key, deleted: true, shared: !!shared }; }
+            catch (e) { console.error('storageDelete failed', e); return null; }
+        }
+        try { localStorage.removeItem(LS_PREFIX + key); return { key, deleted: true, shared: !!shared }; } catch (e) { return null; }
+    }
+    async function storageList(prefix, shared) {
+        if (hasCloudStorage) {
+            try {
+                const snapshot = await db.collection(FS_COLLECTION).get();
+                const keys = [];
+                snapshot.forEach(doc => { if (!prefix || doc.id.indexOf(prefix) === 0) keys.push(doc.id); });
+                return { keys, prefix, shared: !!shared };
+            } catch (e) { console.error('storageList failed', e); return null; }
+        }
+        try {
+            const keys = [];
+            for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.indexOf(LS_PREFIX) === 0) { const bare = k.slice(LS_PREFIX.length); if (!prefix || bare.indexOf(prefix) === 0) keys.push(bare); } }
+            return { keys, prefix, shared: !!shared };
+        } catch (e) { return null; }
+    }
+    async function loadData() {
+        try {
+            const result = await storageGet('ultimate_data', false);
+            if (result && result.value) {
+                const data = JSON.parse(result.value);
+                if (data && data.leads) { APP = data; return; }
+            }
+        } catch (e) { /* key not found or parse error, fall through to backup */ }
+        try {
+            const backup = await storageGet('ultimate_backup', false);
+            if (backup && backup.value) {
+                const data = JSON.parse(backup.value);
+                if (data && data.leads) { APP = data; console.warn('Main data missing/corrupted, restored from backup'); return; }
+            }
+        } catch (e2) { /* no backup either */ }
+        APP = getDefaultData();
+    }
+    let saveInFlight = false, savePending = false;
+    async function saveData() {
+        document.getElementById('leadCountDisplay').innerText = APP.leads.length;
+        document.getElementById('taskCountDisplay').innerText = APP.tasks.length;
+        if (saveInFlight) { savePending = true; return; }
+        saveInFlight = true;
+        try {
+            const json = JSON.stringify(APP);
+            await storageSet('ultimate_data', json, false);
+            await storageSet('ultimate_backup', json, false);
+        } catch (e) { console.error('Save error', e); }
+        saveInFlight = false;
+        if (savePending) { savePending = false; saveData(); }
+    }
+    setInterval(saveData, 5000);
+    window.onbeforeunload = function() { saveData(); };
+
+    function todayStr() { return new Date().toISOString().split('T')[0]; }
+    function daysDiff(d) { if (!d) return 999; return Math.ceil((new Date(d) - new Date(todayStr())) / (1000 * 60 * 60 * 24)); }
+    function genId() { return Date.now() + '-' + Math.random().toString(36).substr(2, 6); }
+    function getProjectName(id) { const p = APP.projects.find(pr => pr.id === id); return p ? p.name : '—'; }
+
+    // ---------- GENERIC EDIT MODAL (works for every category) ----------
+    const EDIT_CONFIGS = {
+        leads: { arr: 'leads', title: 'Edit Lead', fields: [
+            { key: 'name', label: 'Name', type: 'text', required: true },
+            { key: 'email', label: 'Email', type: 'email' },
+            { key: 'phone', label: 'Phone', type: 'text' },
+            { key: 'web', label: 'Website', type: 'url' },
+            { key: 'source', label: 'Source', type: 'text' },
+            { key: 'value', label: 'Est. Deal Value (৳)', type: 'number' },
+            { key: 'outreachDate', label: 'Outreach Date', type: 'date' },
+            { key: 'followupDate', label: 'Follow-up Date', type: 'date' },
+            { key: 'status', label: 'Status', type: 'select', options: ['Cold', 'Contacted', 'Meeting', 'Proposal', 'Converted', 'Lost'] }
+        ]},
+        clients: { arr: 'clients', title: 'Edit Client', fields: [
+            { key: 'name', label: 'Name', type: 'text', required: true },
+            { key: 'email', label: 'Email', type: 'email' },
+            { key: 'phone', label: 'Phone', type: 'text' },
+            { key: 'company', label: 'Company', type: 'text' },
+            { key: 'notes', label: 'Notes/Address', type: 'text' }
+        ]},
+        projects: { arr: 'projects', title: 'Edit Project', fields: [
+            { key: 'name', label: 'Project Name', type: 'text', required: true },
+            { key: 'clientId', label: 'Client', type: 'select', dynamicSource: 'clients' },
+            { key: 'budget', label: 'Budget (৳)', type: 'number' },
+            { key: 'deadline', label: 'Deadline', type: 'date' },
+            { key: 'desc', label: 'Description/Scope', type: 'text' },
+            { key: 'status', label: 'Status', type: 'select', options: ['Active', 'On Hold', 'Completed'] }
+        ]},
+        tasks: { arr: 'tasks', title: 'Edit Task', fields: [
+            { key: 'title', label: 'Task', type: 'text', required: true },
+            { key: 'projectId', label: 'Project', type: 'select', dynamicSource: 'projects' },
+            { key: 'client', label: 'Client', type: 'select', dynamicSource: 'clientNames' },
+            { key: 'assignee', label: 'Assignee', type: 'text' },
+            { key: 'deadline', label: 'Deadline', type: 'date' },
+            { key: 'priority', label: 'Priority', type: 'select', options: ['High', 'Mid', 'Low'] },
+            { key: 'status', label: 'Status', type: 'select', options: ['Pending', 'Today', 'Done'] },
+            { key: 'recurring', label: 'Recurring', type: 'select', options: ['none', 'daily', 'weekly', 'monthly'] },
+            { key: 'estHours', label: 'Est. Hours', type: 'number' },
+            { key: 'desc', label: 'Description/Notes', type: 'text' }
+        ]},
+        payments: { arr: 'payments', title: 'Edit Income Entry', fields: [
+            { key: 'client', label: 'Client', type: 'select', dynamicSource: 'clientNames' },
+            { key: 'amount', label: 'Amount (৳)', type: 'number', required: true },
+            { key: 'date', label: 'Date', type: 'date' },
+            { key: 'projectId', label: 'Project', type: 'select', dynamicSource: 'projects' },
+            { key: 'status', label: 'Status', type: 'select', options: ['Unpaid', 'Paid'] }
+        ]},
+        expenses: { arr: 'expenses', title: 'Edit Expense', fields: [
+            { key: 'category', label: 'Category', type: 'text', required: true },
+            { key: 'amount', label: 'Amount (৳)', type: 'number', required: true },
+            { key: 'date', label: 'Date', type: 'date' },
+            { key: 'projectId', label: 'Project', type: 'select', dynamicSource: 'projects' },
+            { key: 'note', label: 'Note', type: 'text' }
+        ]},
+        subscriptions: { arr: 'subscriptions', title: 'Edit Subscription', fields: [
+            { key: 'name', label: 'Tool Name', type: 'text', required: true },
+            { key: 'cost', label: 'Monthly Cost (৳)', type: 'number' },
+            { key: 'renewDate', label: 'Renew Date', type: 'date' }
+        ]},
+        invoices: { arr: 'invoices', title: 'Edit Invoice', fields: [
+            { key: 'client', label: 'Client', type: 'select', dynamicSource: 'clientNames' },
+            { key: 'projectId', label: 'Project', type: 'select', dynamicSource: 'projects' },
+            { key: 'amount', label: 'Amount (৳)', type: 'number', required: true },
+            { key: 'desc', label: 'Description of Work Billed', type: 'text' },
+            { key: 'date', label: 'Invoice Date', type: 'date' },
+            { key: 'due', label: 'Due Date', type: 'date' },
+            { key: 'status', label: 'Status', type: 'select', options: ['Unpaid', 'Paid'] }
+        ]},
+        marketing: { arr: 'marketing', title: 'Edit Marketing Item', fields: [
+            { key: 'title', label: 'Content/Campaign', type: 'text', required: true },
+            { key: 'type', label: 'Type', type: 'select', options: ['Social', 'Blog', 'Event', 'Campaign'] },
+            { key: 'channel', label: 'Platform/Channel', type: 'text' },
+            { key: 'date', label: 'Date', type: 'date' },
+            { key: 'status', label: 'Status', type: 'select', options: ['Planned', 'In Progress', 'Done'] },
+            { key: 'result', label: 'Result/Notes', type: 'text' }
+        ]}
+    };
+    let currentEditType = null, currentEditId = null;
+    function getDynamicOptions(source) {
+        if (source === 'clients') return APP.clients.map(c => ({ value: c.id, label: c.name }));
+        if (source === 'clientNames') return APP.clients.map(c => ({ value: c.name, label: c.name }));
+        if (source === 'projects') return APP.projects.map(p => ({ value: p.id, label: p.name }));
+        return [];
+    }
+    function renderEditField(f, item) {
+        const val = item[f.key] !== undefined && item[f.key] !== null ? item[f.key] : '';
+        const domId = `editField_${f.key}`;
+        if (f.type === 'select') {
+            const opts = f.dynamicSource ? getDynamicOptions(f.dynamicSource) : f.options.map(o => ({ value: o, label: o }));
+            const optionsHtml = '<option value="">— Select —</option>' + opts.map(o => `<option value="${o.value}" ${String(val) === String(o.value) ? 'selected' : ''}>${o.label}</option>`).join('');
+            return `<div class="modal-field"><label>${f.label}</label><select id="${domId}">${optionsHtml}</select></div>`;
+        }
+        return `<div class="modal-field"><label>${f.label}</label><input type="${f.type}" id="${domId}" value="${String(val).replace(/"/g, '&quot;')}"></div>`;
+    }
+    function openEditModal(type, id) {
+        const cfg = EDIT_CONFIGS[type];
+        if (!cfg) return;
+        const item = APP[cfg.arr].find(x => x.id === id);
+        if (!item) return alert('Item not found (it may have been deleted).');
+        currentEditType = type; currentEditId = id;
+        document.getElementById('editModalTitle').innerHTML = `<i class="fas fa-pen"></i> ${cfg.title}`;
+        document.getElementById('editModalFields').innerHTML = cfg.fields.map(f => renderEditField(f, item)).join('');
+        document.getElementById('editModalOverlay').classList.add('open');
+    }
+    function closeEditModal() {
+        document.getElementById('editModalOverlay').classList.remove('open');
+        currentEditType = null; currentEditId = null;
+    }
+    function saveEditModal() {
+        const cfg = EDIT_CONFIGS[currentEditType];
+        if (!cfg) return closeEditModal();
+        const item = APP[cfg.arr].find(x => x.id === currentEditId);
+        if (!item) return closeEditModal();
+        for (const f of cfg.fields) {
+            const el = document.getElementById(`editField_${f.key}`);
+            if (!el) continue;
+            if (f.required && !el.value.trim()) { alert(`${f.label} is required!`); return; }
+        }
+        for (const f of cfg.fields) {
+            const el = document.getElementById(`editField_${f.key}`);
+            if (!el) continue;
+            let v = el.value;
+            if (f.type === 'number') v = Number(v) || 0;
+            else v = v.trim ? v.trim() : v;
+            item[f.key] = v;
+        }
+        closeEditModal();
+        renderAll();
+    }
+
+
+    // ---------- RENDER ALL ----------
+    function renderAll() {
+        document.getElementById('currentDateDisplay').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        renderDashboard(); renderToday(); renderLeads(); renderTasks(); renderTimerUI();
+        renderFinance(); renderInvoices(); renderMarketing(); updateAllSelects(); saveData();
+    }
+
+    // ---------- DASHBOARD ----------
+    function renderDashboard() {
+        const totalLeads = APP.leads.length;
+        const converted = APP.leads.filter(l => l.status === 'Converted').length;
+        const totalTasks = APP.tasks.length;
+        const pending = APP.tasks.filter(t => t.status !== 'Done').length;
+        const overdue = APP.tasks.filter(t => t.status !== 'Done' && daysDiff(t.deadline) < 0).length;
+        const totalPaid = APP.payments.filter(p => p.status === 'Paid').reduce((s, p) => s + Number(p.amount), 0);
+        const totalExp = APP.expenses.reduce((s, e) => s + Number(e.amount), 0) + APP.subscriptions.reduce((s, sub) => s + Number(sub.cost), 0);
+        document.getElementById('dashStats').innerHTML = `
+            <div class="stat-card teal clickable" onclick="goToTab('leads')"><div class="label">🎣 Leads</div><div class="value">${totalLeads}</div><div class="sub">Converted: ${converted}</div></div>
+            <div class="stat-card clickable" onclick="goToTab('tasks')"><div class="label">📋 Tasks</div><div class="value">${totalTasks}</div><div class="sub">Pending: ${pending}</div></div>
+            <div class="stat-card danger clickable" onclick="goToTab('tasks')"><div class="label">🚨 Overdue</div><div class="value">${overdue}</div></div>
+            <div class="stat-card purple clickable" onclick="goToTab('finance')"><div class="label">📁 Projects</div><div class="value">${APP.projects.length}</div></div>
+            <div class="stat-card success clickable" onclick="goToTab('finance')"><div class="label">💰 Net Profit</div><div class="value">৳${totalPaid - totalExp}</div><div class="sub">Income ৳${totalPaid} / Expense ৳${totalExp}</div></div>
+        `;
+        const urgent = APP.tasks.filter(t => t.status !== 'Done' && daysDiff(t.deadline) <= 3).sort((a, b) => daysDiff(a.deadline) - daysDiff(b.deadline));
+        const container = document.getElementById('dashUrgent');
+        if (!urgent.length) { container.innerHTML = '<p style="color:#b2bec3;">🎉 No urgent tasks!</p>'; return; }
+        container.innerHTML = urgent.slice(0,5).map(t => {
+            const proj = APP.projects.find(p => p.id === t.projectId);
+            const subtasks = t.subtasks || [];
+            const subDone = subtasks.filter(s => s.done).length;
+            const metaBits = [proj ? `📁 ${proj.name}` : '', t.client ? `👤 ${t.client}` : '', subtasks.length ? `☑️ ${subDone}/${subtasks.length} subtasks done` : ''].filter(Boolean).join(' · ');
+            const descHtml = t.desc ? `<div style="font-size:12px;color:#636e72;margin-top:2px;">${t.desc}</div>` : '';
+            const metaHtml = metaBits ? `<div style="font-size:11px;color:#b2bec3;margin-top:2px;">${metaBits}</div>` : '';
+            return `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f1f4f9;">
+                <div style="flex:1;min-width:0;"><strong>${t.title}</strong> <span style="font-size:12px;color:#636e72;">(${t.assignee || '—'})</span>${descHtml}${metaHtml}</div>
+                <span style="display:flex;align-items:center;gap:6px;flex-shrink:0;"><span class="deadline-tag ${daysDiff(t.deadline) < 0 ? 'danger' : 'warn'}">${daysDiff(t.deadline) < 0 ? '⏰ Overdue' : `📅 ${daysDiff(t.deadline)} days`}</span><button class="edit-btn" onclick="openEditModal('tasks','${t.id}')"><i class="fas fa-pen"></i></button></span>
+            </div>`;
+        }).join('');
+    }
+
+    // ---------- TODAY'S FOCUS (auto-triage so nothing gets forgotten) ----------
+    function taskLine(t) {
+        const diff = daysDiff(t.deadline);
+        const dTxt = t.status === 'Done' ? '✅ Done' : diff < 0 ? `🚨 ${Math.abs(diff)} days overdue` : diff === 0 ? '📅 Due today' : `📅 ${diff} days left`;
+        const proj = APP.projects.find(p => p.id === t.projectId);
+        return `<div style="background:white;padding:8px 12px;border-radius:8px;margin-bottom:6px;font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:8px;"><div><strong>${t.title}</strong><div style="font-size:11px;color:#636e72;margin-top:2px;">${proj ? proj.name : '—'} · ${t.client || '—'} · ${dTxt}</div></div><button class="edit-btn" onclick="openEditModal('tasks','${t.id}')"><i class="fas fa-pen"></i></button></div>`;
+    }
+    function renderToday() {
+        const pending = APP.tasks.filter(t => t.status !== 'Done');
+        // Do-this-now card: overdue first, then earliest deadline + high priority
+        const sorted = pending.slice().sort((a, b) => {
+            const da = daysDiff(a.deadline), db = daysDiff(b.deadline);
+            const pa = a.priority === 'High' ? 0 : a.priority === 'Mid' ? 1 : 2;
+            const pb = b.priority === 'High' ? 0 : b.priority === 'Mid' ? 1 : 2;
+            if (da !== db) return da - db;
+            return pa - pb;
+        });
+        const doNowCard = document.getElementById('doNowCard');
+        if (!sorted.length) {
+            doNowCard.innerHTML = `<div style="font-size:14px;">🎉 No pending tasks — add something new or take a break!</div>`;
+        } else {
+            const top = sorted[0];
+            const diff = daysDiff(top.deadline);
+            doNowCard.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+                <div><div style="font-size:11px;opacity:0.8;letter-spacing:0.5px;">👉 Do this now</div>
+                <div style="font-size:20px;font-weight:700;margin:4px 0;">${top.title}</div>
+                <div style="font-size:12px;opacity:0.9;">${top.client || '—'} · ${top.priority} priority · ${diff < 0 ? `🚨 ${Math.abs(diff)} days overdue` : diff === 0 ? 'Due today' : `${diff} days left`}</div></div>
+                <button onclick="openEditModal('tasks','${top.id}')" style="background:rgba(255,255,255,0.15);border:none;color:white;border-radius:8px;padding:6px 10px;cursor:pointer;"><i class="fas fa-pen"></i></button>
+            </div>`;
+        }
+        // Sequence list = tasks explicitly marked "Today", ordered
+        const todays = pending.filter(t => t.status === 'Today').sort((a, b) => (a.order || 0) - (b.order || 0));
+        const seqBox = document.getElementById('todaySequenceList');
+        seqBox.innerHTML = todays.length ? todays.map((t, i) => `<div draggable="true" data-id="${t.id}" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dropTask(event)" style="display:flex;align-items:center;gap:10px;background:#f8faff;padding:8px 12px;border-radius:8px;margin-bottom:6px;cursor:grab;">
+            <i class="fas fa-grip-vertical" style="color:#dfe6e9;"></i>
+            <span style="font-weight:700;color:#4f8cf7;width:18px;">${i + 1}</span>
+            <span style="display:flex;flex-direction:column;line-height:0.7;"><i class="fas fa-caret-up" style="cursor:pointer;color:#636e72;" onclick="moveTask('${t.id}',-1)"></i><i class="fas fa-caret-down" style="cursor:pointer;color:#636e72;" onclick="moveTask('${t.id}',1)"></i></span>
+            <input type="checkbox" class="checkbox-xl" onchange="toggleTaskDone('${t.id}')">
+            <span style="flex:1;">${t.title} <span style="font-size:11px;color:#b2bec3;">(${t.client || '—'})</span></span>
+            <button class="edit-btn" onclick="openEditModal('tasks','${t.id}')"><i class="fas fa-pen"></i></button>
+        </div>`).join('') : '<p style="color:#b2bec3;font-size:13px;">No tasks marked "Today" yet. Set a task status to "Today" in the Tasks tab.</p>';
+        // Eisenhower quadrants
+        const isUrgent = t => daysDiff(t.deadline) <= 2;
+        const isImportant = t => t.priority === 'High';
+        const doNow = pending.filter(t => isUrgent(t) && isImportant(t));
+        const schedule = pending.filter(t => !isUrgent(t) && isImportant(t));
+        const delegate = pending.filter(t => isUrgent(t) && !isImportant(t));
+        const eliminate = pending.filter(t => !isUrgent(t) && !isImportant(t));
+        document.getElementById('quadDoNow').innerHTML = doNow.length ? doNow.map(taskLine).join('') : '<p style="color:#b2bec3;font-size:12px;">Nothing here</p>';
+        document.getElementById('quadSchedule').innerHTML = schedule.length ? schedule.map(taskLine).join('') : '<p style="color:#b2bec3;font-size:12px;">Nothing here</p>';
+        document.getElementById('quadDelegate').innerHTML = delegate.length ? delegate.map(taskLine).join('') : '<p style="color:#b2bec3;font-size:12px;">Nothing here</p>';
+        document.getElementById('quadEliminate').innerHTML = eliminate.length ? eliminate.map(taskLine).join('') : '<p style="color:#b2bec3;font-size:12px;">Nothing here</p>';
+        // Week ahead
+        const week = pending.filter(t => { const d = daysDiff(t.deadline); return d >= 0 && d <= 7; }).sort((a, b) => daysDiff(a.deadline) - daysDiff(b.deadline));
+        document.getElementById('weekAheadList').innerHTML = week.length ? week.map(taskLine).join('') : '<p style="color:#b2bec3;font-size:12px;">No deadlines this week</p>';
+        // Weekly capacity heatmap
+        const capBox = document.getElementById('capacityView');
+        let capHtml = '';
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(); d.setDate(d.getDate() + i);
+            const dStr = d.toISOString().split('T')[0];
+            const dayTasks = pending.filter(t => t.deadline === dStr);
+            const count = dayTasks.length;
+            const bg = count === 0 ? '#f1f4f9' : count <= 2 ? '#e8f5e9' : count <= 3 ? '#fff8e1' : '#ffebee';
+            const fg = count === 0 ? '#b2bec3' : count <= 2 ? '#2e7d32' : count <= 3 ? '#f57f17' : '#c62828';
+            const label = i === 0 ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' });
+            capHtml += `<div style="background:${bg};border-radius:10px;padding:8px 4px;text-align:center;" title="${dayTasks.map(t => t.title).join(', ')}">
+                <div style="font-size:11px;color:#636e72;">${label}</div>
+                <div style="font-size:11px;color:#b2bec3;">${d.getDate()}/${d.getMonth()+1}</div>
+                <div style="font-size:18px;font-weight:700;color:${fg};margin-top:4px;">${count}</div>
+            </div>`;
+        }
+        capBox.innerHTML = capHtml;
+    }
+
+    // ---------- LEADS ----------
+    function renderLeads() {
+        const search = document.getElementById('leadSearch')?.value?.toLowerCase() || '';
+        const filter = document.getElementById('leadFilterStatus')?.value || '';
+        let filtered = APP.leads.filter(l => {
+            if (filter && l.status !== filter) return false;
+            if (search && !l.name.toLowerCase().includes(search) && !(l.email || '').toLowerCase().includes(search) && !(l.web || '').toLowerCase().includes(search)) return false;
+            return true;
+        });
+        const container = document.getElementById('leadList');
+        if (!filtered.length) { container.innerHTML = '<p style="background:white;padding:20px;border-radius:16px;color:#b2bec3;">No leads yet. Start hunting!</p>'; return; }
+        container.innerHTML = filtered.map(l => `<div class="list-item" style="border-left-color: ${l.status === 'Converted' ? '#00b894' : l.status === 'Lost' ? '#d63031' : '#fdcb6e'};">
+            <div class="left"><span class="title">${l.name}</span>
+            <div class="meta">
+                <span>📧 ${l.email || '—'}</span>
+                <span>📞 ${l.phone || '—'}</span>
+                <span>🌐 ${l.web ? `<a href="${l.web}" target="_blank" style="color:#1e3c72;text-decoration:underline;">${l.web}</a>` : '—'}</span>
+                <span>📌 ${l.source || '—'}</span>
+                <span>💵 ${l.value ? '৳' + l.value : '—'}</span>
+                <span>📅 Outreach: ${l.outreachDate || '—'}</span>
+                <span>⏳ Follow-up: ${l.followupDate || '—'}</span>
+                <span class="badge ${l.status.toLowerCase()}">${l.status}</span>
+            </div></div>
+            <button class="edit-btn" onclick="openEditModal('leads','${l.id}')"><i class="fas fa-pen"></i></button>
+            <button class="del-btn" onclick="deleteLead('${l.id}')"><i class="fas fa-trash"></i></button>
+        </div>`).join('');
+    }
+    function addLead() {
+        const n = document.getElementById('leadName');
+        if (!n.value.trim()) return alert('Enter a name!');
+        APP.leads.push({ 
+            id: genId(), name: n.value.trim(), email: document.getElementById('leadEmail').value.trim(), 
+            phone: document.getElementById('leadPhone').value.trim(), web: document.getElementById('leadWeb').value.trim(),
+            source: document.getElementById('leadSource').value.trim(), value: Number(document.getElementById('leadValue').value) || 0,
+            outreachDate: document.getElementById('leadOutreach').value, 
+            followupDate: document.getElementById('leadFollowup').value, status: document.getElementById('leadStatus').value, notes: '' 
+        });
+        n.value = ''; document.getElementById('leadEmail').value = ''; document.getElementById('leadPhone').value = ''; 
+        document.getElementById('leadWeb').value = ''; document.getElementById('leadSource').value = ''; document.getElementById('leadValue').value = '';
+        document.getElementById('leadOutreach').value = ''; document.getElementById('leadFollowup').value = '';
+        renderAll();
+    }
+    function deleteLead(id) { if (!confirm('Delete?')) return; APP.leads = APP.leads.filter(l => l.id !== id); renderAll(); }
+
+    // ---------- CLIENT + PROJECT RESOLUTION (used by the Task form — find existing or create new) ----------
+    function resolveClientProject(clientName, clientEmail, clientPhone, clientCompany, clientNotes, projectName, projectBudget, projectDeadline, projectDesc, projectStatus) {
+        let client = null;
+        clientName = (clientName || '').trim();
+        if (clientName) {
+            client = APP.clients.find(c => c.name.toLowerCase() === clientName.toLowerCase());
+            if (!client) { client = { id: genId(), name: clientName, email: '', phone: '', company: '', notes: '' }; APP.clients.push(client); }
+            else { client.name = clientName; }
+            if (clientEmail && clientEmail.trim()) client.email = clientEmail.trim();
+            if (clientPhone && clientPhone.trim()) client.phone = clientPhone.trim();
+            if (clientCompany && clientCompany.trim()) client.company = clientCompany.trim();
+            if (clientNotes && clientNotes.trim()) client.notes = clientNotes.trim();
+        }
+        let project = null;
+        projectName = (projectName || '').trim();
+        if (projectName) {
+            project = APP.projects.find(p => p.name.toLowerCase() === projectName.toLowerCase());
+            if (!project) { project = { id: genId(), name: projectName, clientId: client ? client.id : '', budget: 0, deadline: '', desc: '', status: 'Active' }; APP.projects.push(project); }
+            else { project.name = projectName; }
+            if (client) project.clientId = client.id;
+            if (projectBudget) project.budget = Number(projectBudget) || project.budget;
+            if (projectDeadline) project.deadline = projectDeadline;
+            if (projectDesc && projectDesc.trim()) project.desc = projectDesc.trim();
+            if (projectStatus) project.status = projectStatus;
+        }
+        return { clientName: client ? client.name : '', projectId: project ? project.id : '' };
+    }
+
+    // ---------- TASKS ----------
+    function renderTasks() {
+        const search = document.getElementById('taskSearch')?.value?.toLowerCase() || '';
+        const pFilter = document.getElementById('taskFilterProject')?.value || '';
+        const sFilter = document.getElementById('taskFilterStatus')?.value || '';
+        let filtered = APP.tasks.filter(t => {
+            if (pFilter && t.projectId !== pFilter) return false;
+            if (sFilter && t.status !== sFilter) return false;
+            if (search && !t.title.toLowerCase().includes(search) && !(t.client || '').toLowerCase().includes(search)) return false;
+            return true;
+        });
+        const container = document.getElementById('taskList');
+        if (!filtered.length) { container.innerHTML = '<p style="background:white;padding:20px;border-radius:16px;color:#b2bec3;">No tasks yet. Add one using the form above.</p>'; return; }
+        filtered = filtered.slice().sort((a, b) => (a.order || 0) - (b.order || 0));
+        container.innerHTML = filtered.map(t => {
+            const diff = daysDiff(t.deadline); let alertClass = 'safe', alertText = '📅 On track';
+            if (t.status === 'Done') { alertText = '✅ Done'; alertClass = 'safe'; } else if (diff < 0) { alertClass = 'danger'; alertText = '🚨 Overdue!'; } else if (diff <= 3) { alertClass = 'warn'; alertText = `⚠️ ${diff} days`; } else alertText = `📅 ${diff} days`;
+            const proj = APP.projects.find(p => p.id === t.projectId);
+            const subtasks = t.subtasks || [];
+            const subDone = subtasks.filter(s => s.done).length;
+            const recIcon = t.recurring && t.recurring !== 'none' ? `<span title="Recurring">🔁 ${t.recurring === 'daily' ? 'Daily' : t.recurring === 'weekly' ? 'Weekly' : 'Monthly'}</span>` : '';
+            const seqArrows = t.status === 'Today' ? `<span style="display:flex;flex-direction:column;line-height:0.7;"><i class="fas fa-caret-up" style="cursor:pointer;color:#4f8cf7;" onclick="moveTask('${t.id}',-1)"></i><i class="fas fa-caret-down" style="cursor:pointer;color:#4f8cf7;" onclick="moveTask('${t.id}',1)"></i></span>` : '';
+            const subtaskHtml = subtasks.length ? `<div style="width:100%;margin-top:6px;padding-left:28px;">${subtasks.map(s => `<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:${s.done ? '#b2bec3' : '#2d3436'};${s.done ? 'text-decoration:line-through;' : ''}"><input type="checkbox" ${s.done ? 'checked' : ''} onchange="toggleSubtask('${t.id}','${s.id}')"> ${s.text}</label>`).join('')}</div>` : '';
+            const files = t.files || [];
+            const fileChipsHtml = files.length ? `<div style="width:100%;margin-top:6px;padding-left:28px;display:flex;flex-wrap:wrap;gap:6px;">${files.map(f => `<span style="display:inline-flex;align-items:center;gap:5px;background:#eef2ff;color:#1e3c72;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;"><i class="fas ${fileIcon(f.name)}"></i> <span style="cursor:pointer;text-decoration:underline;" onclick="openTaskFile('${t.id}','${f.id}')" title="${f.name} (${formatFileSize(f.size)}) — click to open">${f.name.length > 22 ? f.name.slice(0, 19) + '…' : f.name}</span><i class="fas fa-times" style="cursor:pointer;color:#d63031;" onclick="deleteTaskFile('${t.id}','${f.id}')" title="Remove file"></i></span>`).join('')}</div>` : '';
+            const links = t.links || [];
+            const linkChipsHtml = links.length ? `<div style="width:100%;margin-top:6px;padding-left:28px;display:flex;flex-wrap:wrap;gap:6px;">${links.map(l => `<span style="display:inline-flex;align-items:center;gap:5px;background:#e8f0fe;color:#1e3c72;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;"><i class="fas fa-link"></i> <span style="cursor:pointer;text-decoration:underline;" onclick="openTaskLink('${t.id}','${l.id}')" title="${l.url}">${(l.label || 'Link').length > 22 ? (l.label || 'Link').slice(0, 19) + '…' : (l.label || 'Link')}</span><i class="fas fa-times" style="cursor:pointer;color:#d63031;" onclick="deleteTaskLink('${t.id}','${l.id}')" title="Remove link"></i></span>`).join('')}</div>` : '';
+            return `<div class="list-item" style="border-left-color: ${t.status === 'Done' ? '#00b894' : diff < 0 ? '#d63031' : '#4f8cf7'};">
+                <div class="left">${seqArrows}<input type="checkbox" class="checkbox-xl" ${t.status === 'Done' ? 'checked' : ''} onchange="toggleTaskDone('${t.id}')">
+                <span class="title" style="${t.status === 'Done' ? 'text-decoration:line-through;color:#b2bec3;' : ''}">${t.title}</span>
+                <div class="meta"><span>📁 ${proj ? proj.name : '—'}</span><span>👤 ${t.client || '—'}</span><span>👥 ${t.assignee || 'Unassigned'}</span><span class="badge ${t.priority.toLowerCase()}">${t.priority}</span><span class="badge ${t.status === 'Done' ? 'completed' : 'active'}">${t.status}</span><span class="deadline-tag ${alertClass}">${alertText}</span><span>⏱️ ${t.timeSpent || 0}m${t.estHours ? ` / Est: ${t.estHours}h` : ''}</span>${subtasks.length ? `<span>☑️ ${subDone}/${subtasks.length}</span>` : ''}${files.length ? `<span>📎 ${files.length}</span>` : ''}${links.length ? `<span>🔗 ${links.length}</span>` : ''}${recIcon}</div>
+                ${t.desc ? `<div style="width:100%;padding-left:28px;font-size:11px;color:#b2bec3;margin-top:2px;">📝 ${t.desc}</div>` : ''}
+                ${subtaskHtml}${fileChipsHtml}${linkChipsHtml}</div>
+                <button class="edit-btn" title="Attach doc file" onclick="document.getElementById('fileInput_${t.id}').click()"><i class="fas fa-paperclip"></i></button>
+                <input type="file" id="fileInput_${t.id}" style="display:none" multiple accept=".doc,.docx,.pdf,.txt,.odt,.xls,.xlsx,.ppt,.pptx,.csv,.rtf" onchange="handleTaskFileInput('${t.id}', this)">
+                <button class="edit-btn" title="Add Google Doc / link" onclick="addTaskLink('${t.id}')"><i class="fas fa-link"></i></button>
+                <button class="edit-btn" onclick="openEditModal('tasks','${t.id}')"><i class="fas fa-pen"></i></button>
+                <button class="del-btn" onclick="deleteTask('${t.id}')"><i class="fas fa-trash"></i></button>
+            </div>`;
+        }).join('');
+        updateTaskSelectors();
+    }
+    // ---------- TASK TEMPLATES (reusable checklists for recurring workflows) ----------
+    const TASK_TEMPLATES = {
+        blog: { title: 'Blog Article Production', steps: ['Keyword research', 'Create outline', 'Write draft', 'On-page SEO optimize', 'GEO/AEO check', 'Internal linking', 'Publish', 'Index check (GSC)'] },
+        seo: { title: 'On-Page SEO + GEO + AEO Audit', steps: ['Title/meta check', 'Header structure', 'Content gap analysis', 'Internal link check', 'Schema markup', 'Core Web Vitals', 'Image alt text', 'Submit for indexing'] },
+        quora: { title: 'Quora Backlink Answer', steps: ['Find a relevant question', 'Decide persona/hook', 'Write draft', 'Check for AI-giveaway formatting', 'Check link ratio', 'Post'] },
+        product: { title: 'Product Page (Dupe Review)', steps: ['Enter product name+link', 'Confirm auto-researched fields', 'Generate content', 'Check FAQ/entity block', 'Check price format', 'Publish'] }
+    };
+    function applyTemplate(key) {
+        const tpl = TASK_TEMPLATES[key];
+        if (!tpl) return;
+        const deadline = prompt(`Enter a deadline for "${tpl.title}" (YYYY-MM-DD), leave blank to add without one:`, todayStr());
+        if (deadline === null) return;
+        const maxOrder = APP.tasks.reduce((m, t) => Math.max(m, t.order || 0), 0);
+        APP.tasks.push({ id: genId(), title: tpl.title, projectId: '', client: '', assignee: '', deadline: deadline.trim(), priority: 'Mid', status: 'Pending', timeSpent: 0, order: maxOrder + 1, recurring: 'none', subtasks: tpl.steps.map(s => ({ id: genId(), text: s, done: false })), files: [], links: [] });
+        renderAll();
+        alert(`✅ "${tpl.title}" added — with ${tpl.steps.length} subtasks. Go to the Tasks list to assign a project/client.`);
+    }
+    function addTask() {
+        const title = document.getElementById('taskTitle');
+        if (!title.value.trim()) return alert('Enter a task!');
+        const seed = document.getElementById('taskSubtaskSeed').value.trim();
+        const subtasks = seed ? seed.split(',').map(s => s.trim()).filter(Boolean).map(s => ({ id: genId(), text: s, done: false })) : [];
+        const maxOrder = APP.tasks.reduce((m, t) => Math.max(m, t.order || 0), 0);
+        const { clientName, projectId } = resolveClientProject(
+            document.getElementById('taskClientName').value,
+            document.getElementById('taskClientEmail').value,
+            document.getElementById('taskClientPhone').value,
+            document.getElementById('taskClientCompany').value,
+            document.getElementById('taskClientNotes').value,
+            document.getElementById('taskProjectName').value,
+            document.getElementById('taskProjectBudget').value,
+            document.getElementById('taskProjectDeadline').value,
+            document.getElementById('taskProjectDesc').value,
+            document.getElementById('taskProjectStatus').value
+        );
+        APP.tasks.push({ id: genId(), title: title.value.trim(), projectId: projectId, client: clientName, assignee: document.getElementById('taskAssignee').value, deadline: document.getElementById('taskDeadline').value, priority: document.getElementById('taskPriority').value, status: document.getElementById('taskStatus').value, timeSpent: 0, order: maxOrder + 1, recurring: document.getElementById('taskRecurring').value, subtasks: subtasks, desc: document.getElementById('taskDesc').value.trim(), estHours: Number(document.getElementById('taskEstHours').value) || 0, files: [], links: [] });
+        title.value = ''; document.getElementById('taskDeadline').value = ''; document.getElementById('taskSubtaskSeed').value = ''; document.getElementById('taskDesc').value = ''; document.getElementById('taskEstHours').value = '';
+        document.getElementById('taskClientName').value = ''; document.getElementById('taskClientEmail').value = ''; document.getElementById('taskClientPhone').value = ''; document.getElementById('taskClientCompany').value = ''; document.getElementById('taskClientNotes').value = '';
+        document.getElementById('taskProjectName').value = ''; document.getElementById('taskProjectBudget').value = ''; document.getElementById('taskProjectDeadline').value = ''; document.getElementById('taskProjectDesc').value = '';
+        renderAll();
+    }
+    function addDaysToDate(dateStr, days) { const d = dateStr ? new Date(dateStr) : new Date(); d.setDate(d.getDate() + days); return d.toISOString().split('T')[0]; }
+    function toggleTaskDone(id) {
+        const t = APP.tasks.find(t => t.id === id);
+        if (!t) return;
+        const wasDone = t.status === 'Done';
+        t.status = wasDone ? 'Pending' : 'Done';
+        if (!wasDone && t.recurring && t.recurring !== 'none') {
+            const bump = t.recurring === 'daily' ? 1 : t.recurring === 'weekly' ? 7 : 30;
+            const maxOrder = APP.tasks.reduce((m, x) => Math.max(m, x.order || 0), 0);
+            APP.tasks.push({ ...t, id: genId(), status: 'Pending', deadline: addDaysToDate(t.deadline, bump), timeSpent: 0, order: maxOrder + 1, subtasks: (t.subtasks || []).map(s => ({ id: genId(), text: s.text, done: false })), files: [], links: [] });
+        }
+        renderAll();
+    }
+    async function deleteTask(id) {
+        if (!confirm('Delete?')) return;
+        const t = APP.tasks.find(t => t.id === id);
+        if (t && t.files && t.files.length) { for (const f of t.files) { try { await storageDelete(f.storageKey, false); } catch (e) {} } }
+        APP.tasks = APP.tasks.filter(t => t.id !== id);
+        renderAll();
+    }
+
+    // ---------- TASK FILE ATTACHMENTS (doc/pdf/etc, saved per-task via Firestore) ----------
+    const MAX_FILE_BYTES = usingLocalFallback ? 800000 : 650000; // local fallback quota is small (~5-10MB total); Firestore documents cap at 1MB and base64 inflates size ~33%, so raw files must stay under ~650KB
+    function formatFileSize(bytes) {
+        if (!bytes) return '0 KB';
+        if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+    function fileIcon(name) {
+        const ext = (name.split('.').pop() || '').toLowerCase();
+        if (['doc', 'docx', 'odt', 'rtf'].includes(ext)) return 'fa-file-word';
+        if (ext === 'pdf') return 'fa-file-pdf';
+        if (['xls', 'xlsx', 'csv'].includes(ext)) return 'fa-file-excel';
+        if (['ppt', 'pptx'].includes(ext)) return 'fa-file-powerpoint';
+        if (ext === 'txt') return 'fa-file-alt';
+        return 'fa-file';
+    }
+    function readFileAsDataURL(file) {
+        return new Promise((resolve, reject) => {
+            const r = new FileReader();
+            r.onload = () => resolve(r.result);
+            r.onerror = () => reject(r.error);
+            r.readAsDataURL(file);
+        });
+    }
+    async function handleTaskFileInput(taskId, inputEl) {
+        const task = APP.tasks.find(t => t.id === taskId);
+        if (!task) return;
+        const chosenFiles = Array.from(inputEl.files || []);
+        inputEl.value = '';
+        if (!chosenFiles.length) return;
+        if (!task.files) task.files = [];
+        for (const file of chosenFiles) {
+            if (file.size > MAX_FILE_BYTES) {
+                alert(`"${file.name}" খুব বড় (${formatFileSize(file.size)})। ${formatFileSize(MAX_FILE_BYTES)} এর কম সাইজের ফাইল আপলোড করুন।`);
+                continue;
+            }
+            try {
+                const dataUrl = await readFileAsDataURL(file);
+                const base64 = dataUrl.split(',')[1] || '';
+                const fileId = genId();
+                const storageKey = 'taskfile_' + fileId;
+                const result = await storageSet(storageKey, base64, false);
+                if (!result) { alert(`"${file.name}" সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।`); continue; }
+                task.files.push({ id: fileId, name: file.name, type: file.type || 'application/octet-stream', size: file.size, storageKey: storageKey, uploadedAt: new Date().toISOString() });
+            } catch (e) {
+                alert(`"${file.name}" আপলোড করতে সমস্যা হয়েছে।`);
+            }
+        }
+        renderAll();
+    }
+    async function openTaskFile(taskId, fileId) {
+        const task = APP.tasks.find(t => t.id === taskId);
+        if (!task) return;
+        const meta = (task.files || []).find(f => f.id === fileId);
+        if (!meta) return;
+        try {
+            const result = await storageGet(meta.storageKey, false);
+            if (!result || !result.value) { alert('ফাইলটি খুঁজে পাওয়া যায়নি।'); return; }
+            const byteChars = atob(result.value);
+            const byteNumbers = new Array(byteChars.length);
+            for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+            const blob = new Blob([new Uint8Array(byteNumbers)], { type: meta.type || 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = meta.name;
+            a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 15000);
+        } catch (e) {
+            alert('ফাইলটি খুলতে সমস্যা হয়েছে।');
+        }
+    }
+    async function deleteTaskFile(taskId, fileId) {
+        const task = APP.tasks.find(t => t.id === taskId);
+        if (!task) return;
+        const meta = (task.files || []).find(f => f.id === fileId);
+        if (!meta) return;
+        if (!confirm(`"${meta.name}" রিমুভ করবেন?`)) return;
+        try { await storageDelete(meta.storageKey, false); } catch (e) { /* ignore */ }
+        task.files = (task.files || []).filter(f => f.id !== fileId);
+        renderAll();
+    }
+
+    // ---------- TASK LINKS (e.g. Google Docs — just a URL, opens in a new tab) ----------
+    function normalizeUrl(u) {
+        u = (u || '').trim();
+        if (!u) return '';
+        if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+        return u;
+    }
+    function addTaskLink(taskId) {
+        const task = APP.tasks.find(t => t.id === taskId);
+        if (!task) return;
+        const raw = prompt('Google Doc / লিংকের URL দাও:');
+        if (!raw || !raw.trim()) return;
+        const url = normalizeUrl(raw);
+        const label = prompt('লিংকের নাম (optional):', 'Google Doc') || 'Google Doc';
+        if (!task.links) task.links = [];
+        task.links.push({ id: genId(), url: url, label: label.trim() || 'Google Doc' });
+        renderAll();
+    }
+    function openTaskLink(taskId, linkId) {
+        const task = APP.tasks.find(t => t.id === taskId);
+        if (!task) return;
+        const link = (task.links || []).find(l => l.id === linkId);
+        if (!link) return;
+        window.open(link.url, '_blank', 'noopener');
+    }
+    function deleteTaskLink(taskId, linkId) {
+        const task = APP.tasks.find(t => t.id === taskId);
+        if (!task) return;
+        const link = (task.links || []).find(l => l.id === linkId);
+        if (!link) return;
+        if (!confirm(`"${link.label}" লিংকটা রিমুভ করবেন?`)) return;
+        task.links = (task.links || []).filter(l => l.id !== linkId);
+        renderAll();
+    }
+    let dragSrcId = null;
+    function dragStart(ev) { dragSrcId = ev.currentTarget.dataset.id; ev.dataTransfer.effectAllowed = 'move'; }
+    function dragOver(ev) { ev.preventDefault(); }
+    function dropTask(ev) {
+        ev.preventDefault();
+        const targetId = ev.currentTarget.dataset.id;
+        if (!dragSrcId || dragSrcId === targetId) return;
+        const todays = APP.tasks.filter(t => t.status === 'Today').sort((a, b) => (a.order || 0) - (b.order || 0));
+        const fromIdx = todays.findIndex(t => t.id === dragSrcId);
+        const toIdx = todays.findIndex(t => t.id === targetId);
+        if (fromIdx === -1 || toIdx === -1) return;
+        const [moved] = todays.splice(fromIdx, 1);
+        todays.splice(toIdx, 0, moved);
+        todays.forEach((t, i) => t.order = i + 1);
+        dragSrcId = null;
+        renderAll();
+    }
+    function moveTask(id, dir) {
+        const todays = APP.tasks.filter(t => t.status === 'Today').sort((a, b) => (a.order || 0) - (b.order || 0));
+        const idx = todays.findIndex(t => t.id === id);
+        const swapIdx = idx + dir;
+        if (idx === -1 || swapIdx < 0 || swapIdx >= todays.length) return;
+        const a = todays[idx], b = todays[swapIdx];
+        const tmp = a.order; a.order = b.order; b.order = tmp;
+        renderAll();
+    }
+    function toggleSubtask(taskId, subId) { const t = APP.tasks.find(t => t.id === taskId); if (!t) return; const s = (t.subtasks || []).find(s => s.id === subId); if (s) s.done = !s.done; renderAll(); }
+
+    // ---------- TIMER ----------
+    let timerInterval = null;
+    function renderTimerUI() {
+        const sel = document.getElementById('timerTaskSelect');
+        sel.innerHTML = '<option value="">Select task</option>' + APP.tasks.map(t => `<option value="${t.id}">${t.title}</option>`).join('');
+        if (APP.timer && APP.timer.startTime) {
+            const elapsed = Math.floor((Date.now() - APP.timer.startTime) / 1000);
+            document.getElementById('timerDisplay').innerText = new Date(elapsed * 1000).toISOString().substr(11, 8);
+            document.getElementById('timerStatus').innerHTML = '▶️ Running...';
+            if (!timerInterval) startTimerInterval();
+        } else { document.getElementById('timerDisplay').innerText = '00:00:00'; document.getElementById('timerStatus').innerHTML = '⏹️ Stopped'; }
+        const logs = document.getElementById('timerLogs');
+        if (!APP.timeLogs.length) { logs.innerHTML = '<p style="color:#b2bec3;">No logs yet</p>'; return; }
+        logs.innerHTML = APP.timeLogs.slice().reverse().map(l => { const task = APP.tasks.find(t => t.id === l.taskId); return `<div style="padding:4px 0;border-bottom:1px solid #f1f4f9;">${task ? task.title : 'Deleted'} - ${l.duration}m (${l.date})</div>`; }).join('');
+    }
+    function startTimerInterval() { if (timerInterval) clearInterval(timerInterval); timerInterval = setInterval(() => { if (APP.timer && APP.timer.startTime) { const elapsed = Math.floor((Date.now() - APP.timer.startTime) / 1000); document.getElementById('timerDisplay').innerText = new Date(elapsed * 1000).toISOString().substr(11, 8); } }, 1000); }
+    function startTimer() {
+        const taskId = document.getElementById('timerTaskSelect').value;
+        if (!taskId) return alert('Select a task!');
+        if (APP.timer && APP.timer.startTime) return alert('Already running!');
+        APP.timer = { taskId: taskId, startTime: Date.now() };
+        saveData(); renderTimerUI(); if (!timerInterval) startTimerInterval();
+    }
+    function stopTimer() {
+        if (!APP.timer || !APP.timer.startTime) return alert('No timer running!');
+        const duration = Math.floor((Date.now() - APP.timer.startTime) / 1000);
+        const mins = Math.round(duration / 60);
+        if (mins > 0) { const task = APP.tasks.find(t => t.id === APP.timer.taskId); if (task) task.timeSpent = (task.timeSpent || 0) + mins; APP.timeLogs.push({ taskId: APP.timer.taskId, duration: mins, date: todayStr() }); }
+        APP.timer = { taskId: null, startTime: null };
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = null; renderAll();
+    }
+
+    // ---------- FINANCE (Project-based) ----------
+    function renderFinance() {
+        const totalPaid = APP.payments.filter(p => p.status === 'Paid').reduce((s, p) => s + Number(p.amount), 0);
+        const totalUnpaid = APP.payments.filter(p => p.status === 'Unpaid').reduce((s, p) => s + Number(p.amount), 0);
+        const totalExp = APP.expenses.reduce((s, e) => s + Number(e.amount), 0) + APP.subscriptions.reduce((s, sub) => s + Number(sub.cost), 0);
+        document.getElementById('financeStats').innerHTML = `
+            <div class="stat-card success"><div class="label">✅ Total Income</div><div class="value">৳${totalPaid}</div></div>
+            <div class="stat-card danger"><div class="label">⏳ Receivable</div><div class="value">৳${totalUnpaid}</div></div>
+            <div class="stat-card orange"><div class="label">📉 Total Expenses</div><div class="value">৳${totalExp}</div></div>
+            <div class="stat-card purple"><div class="label">💰 Net</div><div class="value">৳${totalPaid - totalExp}</div></div>
+        `;
+
+        // Project-wise Summary
+        const projSummary = document.getElementById('projectFinanceSummary');
+        if (APP.projects.length === 0) {
+            projSummary.innerHTML = '<p style="color:#b2bec3;">Add a project first to see the project-wise summary.</p>';
+        } else {
+            let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">';
+            APP.projects.forEach(p => {
+                const pIncome = APP.payments.filter(pay => pay.projectId === p.id && pay.status === 'Paid').reduce((s, pay) => s + Number(pay.amount), 0);
+                const pExp = APP.expenses.filter(exp => exp.projectId === p.id).reduce((s, exp) => s + Number(exp.amount), 0);
+                const net = pIncome - pExp;
+                html += `<div style="background:#f8faff;padding:12px;border-radius:10px;border-left:4px solid ${net >=0 ? '#00b894' : '#d63031'};">
+                    <strong>${p.name}</strong>
+                    <div style="font-size:12px;color:#636e72;margin-top:4px;">Income: ৳${pIncome} | Expense: ৳${pExp} | <span style="font-weight:700;color:${net >=0 ? '#00b894' : '#d63031'};">Net: ৳${net}</span></div>
+                </div>`;
+            });
+            html += '</div>';
+            projSummary.innerHTML = html;
+        }
+
+        // Payment List (showing project)
+        document.getElementById('paymentList').innerHTML = APP.payments.length ? APP.payments.map((p) => `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f1f4f9;"><span>${p.client} - ৳${p.amount} (${getProjectName(p.projectId)})</span><span>${p.date} <span class="badge ${p.status === 'Paid' ? 'paid' : 'unpaid'}">${p.status}</span><button class="edit-btn" onclick="openEditModal('payments','${p.id}')"><i class="fas fa-pen"></i></button><button class="del-btn" onclick="deletePayment('${p.id}')"><i class="fas fa-times"></i></button></span></div>`).join('') : '<p style="color:#b2bec3;">None</p>';
+        
+        // Expense List (showing project)
+        document.getElementById('expenseList').innerHTML = APP.expenses.length ? APP.expenses.map((e) => `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f1f4f9;"><span>${e.category} - ৳${e.amount} (${getProjectName(e.projectId)})</span><span>${e.date} ${e.note || ''}<button class="edit-btn" onclick="openEditModal('expenses','${e.id}')"><i class="fas fa-pen"></i></button><button class="del-btn" onclick="deleteExpense('${e.id}')"><i class="fas fa-times"></i></button></span></div>`).join('') : '<p style="color:#b2bec3;">None</p>';
+        
+        document.getElementById('subscriptionList').innerHTML = APP.subscriptions.length ? APP.subscriptions.map((s) => `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f1f4f9;"><span>${s.name} - ৳${s.cost}/mo</span><span>Renew: ${s.renewDate || '—'}<button class="edit-btn" onclick="openEditModal('subscriptions','${s.id}')"><i class="fas fa-pen"></i></button><button class="del-btn" onclick="deleteSubscription('${s.id}')"><i class="fas fa-times"></i></button></span></div>`).join('') : '<p style="color:#b2bec3;">None</p>';
+    }
+
+    function addPayment() {
+        const c = document.getElementById('payClient'), a = document.getElementById('payAmount');
+        if (!c.value.trim() || !a.value) return alert('Fill in client and amount!');
+        APP.payments.push({ id: genId(), client: c.value.trim(), amount: Number(a.value), date: document.getElementById('payDate').value || todayStr(), projectId: document.getElementById('payProject').value, status: document.getElementById('payStatus').value });
+        c.value = ''; a.value = ''; renderAll();
+    }
+    function deletePayment(id) { if (!confirm('Delete?')) return; APP.payments = APP.payments.filter(p => p.id !== id); renderAll(); }
+    function addExpense() {
+        const c = document.getElementById('expCategory'), a = document.getElementById('expAmount');
+        if (!c.value.trim() || !a.value) return alert('Fill in category and amount!');
+        APP.expenses.push({ id: genId(), category: c.value.trim(), amount: Number(a.value), date: document.getElementById('expDate').value || todayStr(), projectId: document.getElementById('expProject').value, note: document.getElementById('expNote').value.trim() });
+        c.value = ''; a.value = ''; document.getElementById('expNote').value = ''; renderAll();
+    }
+    function deleteExpense(id) { if (!confirm('Delete?')) return; APP.expenses = APP.expenses.filter(e => e.id !== id); renderAll(); }
+    function addSubscription() {
+        const n = document.getElementById('subName'), c = document.getElementById('subCost');
+        if (!n.value.trim() || !c.value) return alert('Fill in the fields!');
+        APP.subscriptions.push({ id: genId(), name: n.value.trim(), cost: Number(c.value), renewDate: document.getElementById('subRenew').value });
+        n.value = ''; c.value = ''; renderAll();
+    }
+    function deleteSubscription(id) { if (!confirm('Delete?')) return; APP.subscriptions = APP.subscriptions.filter(s => s.id !== id); renderAll(); }
+
+    // ---------- INVOICES ----------
+    function renderInvoices() {
+        const c = document.getElementById('invoiceList');
+        if (!APP.invoices.length) { c.innerHTML = '<p style="background:white;padding:20px;border-radius:16px;color:#b2bec3;">No invoices yet</p>'; return; }
+        c.innerHTML = APP.invoices.map((inv) => `<div class="list-item"><div class="left"><span class="title">INV-${inv.number}</span><div class="meta"><span>👤 ${inv.client}</span><span>📁 ${getProjectName(inv.projectId)}</span><span>💰 ৳${inv.amount}</span><span>📅 ${inv.date}</span>${inv.due ? `<span>⏳ Due: ${inv.due}</span>` : ''}<span class="badge ${inv.status === 'Paid' ? 'paid' : 'unpaid'}">${inv.status}</span></div>${inv.desc ? `<div style="font-size:11px;color:#b2bec3;width:100%;margin-top:3px;">📝 ${inv.desc}</div>` : ''}</div><button class="edit-btn" onclick="openEditModal('invoices','${inv.id}')"><i class="fas fa-pen"></i></button><button class="del-btn" onclick="deleteInvoice('${inv.id}')"><i class="fas fa-trash"></i></button></div>`).join('');
+    }
+    function generateInvoice() {
+        const client = document.getElementById('invClient').value;
+        const amount = document.getElementById('invAmount').value;
+        if (!client || !amount) return alert('Enter client and amount!');
+        APP.invoices.push({ id: genId(), number: APP.invoices.length + 1, client: client, projectId: document.getElementById('invProject').value, amount: Number(amount), date: document.getElementById('invDate').value || todayStr(), due: document.getElementById('invDue').value, status: document.getElementById('invStatus').value, desc: document.getElementById('invDesc').value.trim() });
+        renderAll(); alert('✅ Invoice generated!');
+    }
+    function deleteInvoice(id) { if (!confirm('Delete?')) return; APP.invoices = APP.invoices.filter(inv => inv.id !== id); renderAll(); }
+
+    // ---------- MARKETING ----------
+    function renderMarketing() {
+        const c = document.getElementById('marketingList');
+        if (!APP.marketing.length) { c.innerHTML = '<p style="background:white;padding:20px;border-radius:16px;color:#b2bec3;">No marketing plans yet</p>'; return; }
+        c.innerHTML = APP.marketing.map(m => `<div class="list-item" style="border-left-color:#e17055;"><div class="left"><span class="title">${m.title}</span><div class="meta"><span>📌 ${m.type}</span>${m.channel ? `<span>📢 ${m.channel}</span>` : ''}<span>📅 ${m.date || '—'}</span><span class="badge ${m.status.toLowerCase().replace(/\s+/g,'')}">${m.status}</span></div>${m.result ? `<div style="font-size:11px;color:#b2bec3;width:100%;margin-top:3px;">📝 ${m.result}</div>` : ''}</div><button class="edit-btn" onclick="openEditModal('marketing','${m.id}')"><i class="fas fa-pen"></i></button><button class="del-btn" onclick="deleteMarketing('${m.id}')"><i class="fas fa-trash"></i></button></div>`).join('');
+    }
+    function addMarketing() {
+        const t = document.getElementById('mktTitle');
+        if (!t.value.trim()) return alert('Enter a title!');
+        APP.marketing.push({ id: genId(), title: t.value.trim(), type: document.getElementById('mktType').value, channel: document.getElementById('mktChannel').value.trim(), date: document.getElementById('mktDate').value, status: document.getElementById('mktStatus').value, result: document.getElementById('mktResult').value.trim() });
+        t.value = ''; document.getElementById('mktChannel').value = ''; document.getElementById('mktResult').value = ''; renderAll();
+    }
+    function deleteMarketing(id) { if (!confirm('Delete?')) return; APP.marketing = APP.marketing.filter(m => m.id !== id); renderAll(); }
+
+    // ---------- SELECT UPDATES (Smart Placeholders) ----------
+    function updateAllSelects() {
+        // If no clients exist, show "Add a client first" in dropdowns
+        const clientOpts = APP.clients.length ? '<option value="">— Select —</option>' + APP.clients.map(c => `<option value="${c.id}">${c.name}</option>`).join('') : '<option value="">— Add a client first —</option>';
+        const clientNameOpts = APP.clients.length ? '<option value="">— Select —</option>' + APP.clients.map(c => `<option value="${c.name}">${c.name}</option>`).join('') : '<option value="">— Add a client first —</option>';
+        const projectOpts = APP.projects.length ? '<option value="">— Select —</option>' + APP.projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('') : '<option value="">— Add a project first —</option>';
+
+        ['projectClient'].forEach(id => { let s = document.getElementById(id); if (s) { let v = s.value; s.innerHTML = clientOpts; s.value = v; } });
+        ['invClient', 'payClient'].forEach(id => { let s = document.getElementById(id); if (s) { let v = s.value; s.innerHTML = clientNameOpts; s.value = v; } });
+        ['taskFilterProject', 'payProject', 'expProject', 'invProject'].forEach(id => { let s = document.getElementById(id); if (s) { let v = s.value; s.innerHTML = projectOpts; s.value = v; } });
+        let clientNameList = document.getElementById('clientNameList'); if (clientNameList) clientNameList.innerHTML = APP.clients.map(c => `<option value="${c.name}"></option>`).join('');
+        let projectNameList = document.getElementById('projectNameList'); if (projectNameList) projectNameList.innerHTML = APP.projects.map(p => `<option value="${p.name}"></option>`).join('');
+        
+        let taskStatusFilter = document.getElementById('taskFilterStatus'); if (taskStatusFilter) { let v = taskStatusFilter.value; taskStatusFilter.innerHTML = '<option value="">All Statuses</option><option value="Pending">Pending</option><option value="Today">Today</option><option value="Done">Done</option>'; taskStatusFilter.value = v; }
+        renderTimerUI();
+    }
+    function updateTaskSelectors() { updateAllSelects(); }
+
+    // ---------- BACKUP ----------
+    function manualBackup() { const blob = new Blob([JSON.stringify(APP, null, 2)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Backup_${todayStr()}.json`; a.click(); document.getElementById('backupStatus').innerHTML = '✅ Backup downloaded.'; }
+    function restoreBackup(event) {
+        const file = event.target.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => { try { const data = JSON.parse(e.target.result); if (data.leads && data.tasks) { APP = data; renderAll(); alert('✅ Restore successful!'); } else { alert('Invalid file!'); } } catch (err) { alert('Corrupted file!'); } };
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+    async function clearAllData() {
+        try { await storageDelete('ultimate_data', false); } catch (e) {}
+        try { await storageDelete('ultimate_backup', false); } catch (e) {}
+        try {
+            const list = await storageList('taskfile_', false);
+            if (list && list.keys) { for (const k of list.keys) { try { await storageDelete(k, false); } catch (e) {} } }
+        } catch (e) {}
+        APP = getDefaultData(); renderAll(); alert('Data reset.');
+    }
+
+    // ---------- TAB SWITCH ----------
+    function goToTab(tabName) {
+        const btn = document.querySelector('.tab-btn[data-tab="' + tabName + '"]');
+        if (btn) btn.click();
+    }
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(this.dataset.tab).classList.add('active');
+            const tab = this.dataset.tab;
+            if (tab === 'dashboard') renderDashboard();
+            else if (tab === 'today') renderToday();
+            else if (tab === 'leads') renderLeads();
+            else if (tab === 'clients') renderClients();
+            else if (tab === 'projects') renderProjects();
+            else if (tab === 'tasks') renderTasks();
+            else if (tab === 'timer') renderTimerUI();
+            else if (tab === 'finance') renderFinance();
+            else if (tab === 'invoices') renderInvoices();
+            else if (tab === 'marketing') renderMarketing();
+            else if (tab === 'backup') document.getElementById('backupStatus').innerHTML = usingLocalFallback ? '🟡 Auto-backup active (এই ব্রাউজারে সংরক্ষিত — অন্য ব্রাউজার/ডিভাইসে দেখা যাবে না)' : '🟢 Auto-backup active (Firebase cloud sync — সব ব্রাউজার/ডিভাইসে একই data)';
+        });
+    });
+
+    // ---------- INIT ----------
+    (async function init() {
+        await loadData();
+        renderAll();
+        const modeNote = usingLocalFallback ? ' (এই ব্রাউজারে সংরক্ষিত — অন্য ব্রাউজার/ডিভাইসে দেখা যাবে না)' : ' (Firebase cloud sync — সব ব্রাউজার/ডিভাইসে একই data)';
+        document.getElementById('backupStatus').innerHTML = '🟢 Double-layer backup active. Saves every 5 seconds.' + modeNote;
+        const loader = document.getElementById('appLoadingOverlay');
+        if (loader) loader.remove();
+    })();
+</script>
+</body>
+</html>
